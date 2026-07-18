@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-17T00:00:00Z",
+  "manifestChecksum": "sha256:88f1e57627e5b700af5a47906a22699e65726a0ad874e3521c38faba134d6a10",
+  "compiler": {
+    "vendor": "openmultiplayer",
+    "version": "3.10.11",
+    "checksum": "sha256:f0e57d5abfd6cc864842030d4087095d9f2029c749a57a478f16a6fa0120bb50"
+  },
+  "runtimeProfile": "openmp",
+  "packages": [
+    {
+      "name": "openmultiplayer/omp-stdlib",
+      "resolved": "openmultiplayer/omp-stdlib@master",
+      "commit": "3333333333333333333333333333333333333b",
+      "source": { "type": "git", "url": "https://github.com/openmultiplayer/omp-stdlib" },
+      "kind": "dependency"
+    },
+    {
+      "name": "pawn-lang/YSI-Includes",
+      "version": "5.0.0",
+      "resolved": "pawn-lang/YSI-Includes@5.x",
+      "commit": "4444444444444444444444444444444444444c",
+      "source": { "type": "git", "url": "https://github.com/pawn-lang/YSI-Includes" },
+      "kind": "dependency",
+      "dependencies": ["openmultiplayer/omp-stdlib"]
+    },
+    {
+      "name": "samp-incognito/samp-streamer-plugin",
+      "version": "2.8.2",
+      "resolved": "samp-incognito/samp-streamer-plugin:2.8.2",
+      "commit": "5555555555555555555555555555555555555d",
+      "source": { "type": "archive", "url": "https://github.com/samp-incognito/samp-streamer-plugin/releases/download/2.8.2/streamer.zip" },
+      "checksum": "sha256:a5a01a05531af1a1827650fdc99b00b58ed0f53278ab6bb722617d71a18291c4",
+      "kind": "plugin",
+      "platformArtifacts": [
+        { "platform": "linux-x86_64", "path": "plugins/streamer.so", "checksum": "sha256:cc36e7660211f35f850e074a54b45ca3c0bcad427f8e159b3762826c2b51b8eb" },
+        { "platform": "windows-x86_64", "path": "plugins/streamer.dll", "checksum": "sha256:da43d92512819fed670422f20c3602e69d82a9a0a173438652b570d7b3999c7e" }
+      ]
+    }
+  ]
+}

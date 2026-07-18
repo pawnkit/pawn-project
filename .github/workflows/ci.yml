@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (go ${{ matrix.go-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: ["1.26", "stable"]
+    steps:
+      - name: Check out pawn-project
+        uses: actions/checkout@v4
+        with:
+          path: pawn-project
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Build
+        working-directory: pawn-project
+        run: go build ./...
+
+      - name: Vet
+        working-directory: pawn-project
+        run: go vet ./...
+
+      - name: gofmt check
+        working-directory: pawn-project
+        run: |
+          fmt_out="$(gofmt -l .)"
+          if [ -n "$fmt_out" ]; then
+            echo "The following files are not gofmt'd:"
+            echo "$fmt_out"
+            exit 1
+          fi
+
+      - name: go mod tidy check
+        working-directory: pawn-project
+        run: |
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
+
+      - name: Test (race, shuffled)
+        working-directory: pawn-project
+        env:
+          CGO_ENABLED: "1"
+        run: go test -race -shuffle=on ./...
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out pawn-project
+        uses: actions/checkout@v4
+        with:
+          path: pawn-project
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.11.4
+          working-directory: pawn-project

@@ -1,0 +1,41 @@
+version: "3"
+
+tasks:
+  build:
+    cmds:
+      - go build ./...
+
+  vet:
+    cmds:
+      - go vet ./...
+
+  fmt:
+    cmds:
+      - gofmt -w .
+
+  fmt-check:
+    cmds:
+      - |
+        fmt_out="$(gofmt -l .)"
+        if [ -n "$fmt_out" ]; then
+          echo "The following files are not gofmt'd:"
+          echo "$fmt_out"
+          exit 1
+        fi
+
+  lint:
+    cmds:
+      - golangci-lint run ./...
+
+  test:
+    cmds:
+      - CGO_ENABLED=1 go test -race -shuffle=on ./...
+
+  check:
+    desc: Everything CI runs.
+    cmds:
+      - task: fmt-check
+      - task: vet
+      - task: lint
+      - task: build
+      - task: test

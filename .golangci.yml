@@ -1,0 +1,106 @@
+version: "2"
+run:
+  timeout: 5m
+  tests: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 50
+
+linters:
+  enable:
+    # correctness
+    - govet
+    - staticcheck
+    - unused
+    - errcheck
+    - errorlint
+    - nilerr
+    - forcetypeassert
+    - copyloopvar
+    - durationcheck
+    - reassign
+    # style
+    - gocritic
+    - revive
+    - whitespace
+    - godot
+    - misspell
+    - dupword
+    - predeclared
+    - errname
+    - asciicheck
+    # complexity
+    - gocyclo
+    - nestif
+    - funlen
+    - dupl
+    # performance
+    - perfsprint
+    - unconvert
+    - ineffassign
+    - goconst
+    # security
+    - gosec
+    - bidichk
+    # testing
+    - thelper
+    - usetesting
+    - paralleltest
+    # modernization & meta
+    - modernize
+    - exptostd
+    - intrange
+    - usestdlibvars
+    - exhaustive
+    - nolintlint
+
+  disable:
+    - lll
+    - prealloc
+    - wrapcheck
+    - err113
+    - mnd
+    - varnamelen
+
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters: [dupl, funlen, gocyclo, paralleltest, goconst, revive]
+      - path: (manifest|lockfile)/validate\.go
+        linters: [dupl]
+        text: "lines are duplicate of"
+
+  settings:
+    dupl:
+      threshold: 100
+    errcheck:
+      check-type-assertions: true
+    exhaustive:
+      default-signifies-exhaustive: true
+    funlen:
+      lines: 120
+      statements: 80
+    goconst:
+      min-len: 3
+      min-occurrences: 4
+    gocyclo:
+      min-complexity: 20
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+    revive:
+      rules:
+        # This module deliberately keeps comments minimal (see
+        # CONTRIBUTING.md's Style section): a doc comment is added when the
+        # WHY is non-obvious, not on every trivial exported getter/const.
+        - name: exported
+          disabled: true
+
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+  settings:
+    gofumpt:
+      extra-rules: true
