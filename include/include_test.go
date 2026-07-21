@@ -43,6 +43,30 @@ func TestResolve_QuotedFallsBackToRoots(t *testing.T) {
 	}
 }
 
+func TestResolve_QuotedUsesEntryDirectory(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/gamemodes/modules/player/main.pwn", []byte(""))
+	m.AddFile("/proj/gamemodes/modules/player/joining.pwn", []byte(""))
+
+	r := NewWithQuotedRoots(m, nil, []string{"/proj/gamemodes"})
+
+	got, ok := r.Resolve("/proj/gamemodes/modules/player/main.pwn", "modules/player/joining.pwn", true)
+	if !ok || got != "/proj/gamemodes/modules/player/joining.pwn" {
+		t.Fatalf("Resolve() = (%q, %v)", got, ok)
+	}
+}
+
+func TestResolve_AngleBracketSkipsQuotedRoots(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/gamemodes/modules/player.inc", []byte(""))
+
+	r := NewWithQuotedRoots(m, nil, []string{"/proj/gamemodes"})
+
+	if got, ok := r.Resolve("/proj/gamemodes/main.pwn", "modules/player.inc", false); ok {
+		t.Fatalf("Resolve() = (%q, %v)", got, ok)
+	}
+}
+
 func TestResolve_AngleBracketSkipsFromFileDir(t *testing.T) {
 	m := fsx.NewMem()
 	m.AddFile("/proj/gamemodes/main.pwn", []byte(""))

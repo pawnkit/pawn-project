@@ -8,6 +8,14 @@ each documented here).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-07-21
+
+### Fixed
+
+- Resolved nested quoted includes from the manifest entry directory.
+
+## [0.1.0] - 2026-07-18
+
 ### Added
 
 - Initial implementation: `fsx`, `pathutil`, `workspace`, `manifest`,

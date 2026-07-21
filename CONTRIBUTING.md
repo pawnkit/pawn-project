@@ -9,7 +9,7 @@ the result you expected.
 Project discovery sits underneath several PawnKit tools. Check
 [docs/architecture.md](docs/architecture.md) before adding a package or public
 API, and do not import a higher-level tool such as `pawnlint` or
-`pawn-language-server`.
+`pawnlsp`.
 
 ## Local setup
 

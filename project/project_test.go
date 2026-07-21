@@ -75,6 +75,28 @@ func TestLoad_FullyResolvedProject(t *testing.T) {
 	}
 }
 
+func TestLoad_QuotedIncludesUseEntryDirectory(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/pawn.json", []byte(`{"entry":"gamemodes/gamemode.pwn"}`))
+	m.AddFile("/proj/gamemodes/gamemode.pwn", []byte(""))
+	m.AddFile("/proj/gamemodes/modules/player/main.pwn", []byte(""))
+	m.AddFile("/proj/gamemodes/modules/player/joining.pwn", []byte(""))
+
+	p, err := Load(source.NewRegistry(), m, "/proj/gamemodes/modules/player/main.pwn", Options{})
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	got, ok := p.IncludeResolver().Resolve(
+		"/proj/gamemodes/modules/player/main.pwn",
+		"modules/player/joining.pwn",
+		true,
+	)
+	if !ok || got != "/proj/gamemodes/modules/player/joining.pwn" {
+		t.Fatalf("Resolve() = (%q, %v)", got, ok)
+	}
+}
+
 func TestLoad_NoLockfileIsFine(t *testing.T) {
 	m := fsx.NewMem()
 	m.AddFile("/proj/pawn.json", []byte(`{"entry": "a.pwn"}`))

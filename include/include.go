@@ -8,18 +8,28 @@ import (
 
 // Resolver searches a fixed, ordered list of include roots.
 type Resolver struct {
-	fsys  fsx.FS
-	roots []string
+	fsys        fsx.FS
+	roots       []string
+	quotedRoots []string
 }
 
 // New builds a Resolver from ordered, absolute roots.
 func New(fsys fsx.FS, roots []string) *Resolver {
+	return NewWithQuotedRoots(fsys, roots, nil)
+}
+
+// NewWithQuotedRoots adds roots used only by quoted includes.
+func NewWithQuotedRoots(fsys fsx.FS, roots, quotedRoots []string) *Resolver {
 	cleaned := make([]string, len(roots))
 	for i, r := range roots {
 		cleaned[i] = pathutil.Clean(r)
 	}
+	quoted := make([]string, len(quotedRoots))
+	for i, r := range quotedRoots {
+		quoted[i] = pathutil.Clean(r)
+	}
 
-	return &Resolver{fsys: fsys, roots: cleaned}
+	return &Resolver{fsys: fsys, roots: cleaned, quotedRoots: quoted}
 }
 
 // Roots returns the configured search path.
@@ -40,6 +50,12 @@ func (r *Resolver) Resolve(fromFile, spec string, quoted bool) (string, bool) {
 
 		if p, ok := r.tryDir(fromDir, candidates); ok {
 			return p, true
+		}
+
+		for _, root := range r.quotedRoots {
+			if p, ok := r.tryDir(root, candidates); ok {
+				return p, true
+			}
 		}
 	}
 

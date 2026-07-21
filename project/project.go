@@ -3,6 +3,7 @@ package project
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/pawnkit/pawnkit-core/diagnostic"
 	"github.com/pawnkit/pawnkit-core/source"
@@ -65,6 +66,11 @@ func Load(reg *source.Registry, fsys fsx.FS, start string, opts Options) (*Proje
 		return nil, fmt.Errorf("project: resolving paths: %w", err)
 	}
 
+	var quotedRoots []string
+	if resolved.Entry != "" {
+		quotedRoots = append(quotedRoots, filepath.Dir(resolved.Entry))
+	}
+
 	p := &Project{
 		root:         root.Dir,
 		workspace:    root,
@@ -72,7 +78,7 @@ func Load(reg *source.Registry, fsys fsx.FS, start string, opts Options) (*Proje
 		manifestDiag: manifestRes.Diagnostics,
 		selection:    selection,
 		resolved:     resolved,
-		includes:     include.New(fsys, resolved.IncludeRoots),
+		includes:     include.NewWithQuotedRoots(fsys, resolved.IncludeRoots, quotedRoots),
 	}
 
 	lockRelPath := m.PawnKit.LockfilePath()
