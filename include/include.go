@@ -2,6 +2,8 @@
 package include
 
 import (
+	"strings"
+
 	"github.com/pawnkit/pawn-project/fsx"
 	"github.com/pawnkit/pawn-project/pathutil"
 )
@@ -44,6 +46,12 @@ func (r *Resolver) Roots() []string {
 // directory first. Missing extensions are retried with ".inc".
 func (r *Resolver) Resolve(fromFile, spec string, quoted bool) (string, bool) {
 	candidates := searchCandidates(spec)
+	normalized := pathutil.ToSlash(strings.TrimSpace(spec))
+	if strings.HasPrefix(normalized, "./") || strings.HasPrefix(normalized, "../") {
+		if p, ok := r.tryRelative(pathutil.Dir(pathutil.Clean(fromFile)), candidates); ok {
+			return p, true
+		}
+	}
 
 	if quoted {
 		fromDir := pathutil.Dir(pathutil.Clean(fromFile))
@@ -68,6 +76,27 @@ func (r *Resolver) Resolve(fromFile, spec string, quoted bool) (string, bool) {
 	return "", false
 }
 
+func (r *Resolver) tryRelative(dir string, candidates []string) (string, bool) {
+	for _, candidate := range candidates {
+		path := pathutil.Join(dir, candidate)
+		if r.withinRoot(path) && fsx.IsFile(r.fsys, path) {
+			return path, true
+		}
+	}
+	return "", false
+}
+
+func (r *Resolver) withinRoot(path string) bool {
+	path = strings.ToLower(pathutil.Clean(path))
+	for _, root := range append(r.roots, r.quotedRoots...) {
+		root = strings.ToLower(pathutil.Clean(root))
+		if path == root || strings.HasPrefix(path, root+"/") {
+			return true
+		}
+	}
+	return false
+}
+
 func (r *Resolver) tryDir(dir string, candidates []string) (string, bool) {
 	for _, c := range candidates {
 		p, err := pathutil.SafeJoin(dir, c)
@@ -84,9 +113,9 @@ func (r *Resolver) tryDir(dir string, candidates []string) (string, bool) {
 }
 
 func searchCandidates(spec string) []string {
-	spec = pathutil.ToSlash(spec)
+	spec = pathutil.ToSlash(strings.TrimSpace(spec))
 
-	if pathutil.Ext(spec) != "" {
+	if extension := strings.ToLower(pathutil.Ext(spec)); extension == ".inc" || extension == ".pwn" {
 		return []string{spec}
 	}
 

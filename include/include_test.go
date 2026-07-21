@@ -109,6 +109,43 @@ func TestResolve_ExplicitExtensionNotDoubled(t *testing.T) {
 	}
 }
 
+func TestResolve_DottedIncludeName(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/includes/open.mp.inc", []byte(""))
+
+	r := New(m, []string{"/proj/includes"})
+
+	got, ok := r.Resolve("/proj/gamemodes/main.pwn", "open.mp", false)
+	if !ok || got != "/proj/includes/open.mp.inc" {
+		t.Errorf("got (%q, %v)", got, ok)
+	}
+}
+
+func TestResolve_TrimsIncludePadding(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/includes/YSI_Coding/y_hooks.inc", []byte(""))
+
+	r := New(m, []string{"/proj/includes"})
+
+	got, ok := r.Resolve("/proj/gamemodes/main.pwn", " YSI_Coding\\y_hooks ", false)
+	if !ok || got != "/proj/includes/YSI_Coding/y_hooks.inc" {
+		t.Errorf("got (%q, %v)", got, ok)
+	}
+}
+
+func TestResolve_RelativeAngleIncludeWithinRoot(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/dependencies/YSI/YSI_Core/internal.inc", []byte(""))
+	m.AddFile("/proj/dependencies/YSI/YSI_Coding/y_hooks.inc", []byte(""))
+
+	r := New(m, []string{"/proj/dependencies/YSI"})
+
+	got, ok := r.Resolve("/proj/dependencies/YSI/YSI_Core/internal.inc", "../YSI_Coding/y_hooks", false)
+	if !ok || got != "/proj/dependencies/YSI/YSI_Coding/y_hooks.inc" {
+		t.Errorf("got (%q, %v)", got, ok)
+	}
+}
+
 func TestResolve_MultipleRootsInOrder(t *testing.T) {
 	m := fsx.NewMem()
 	m.AddFile("/proj/vendor/YSI/y_hooks.inc", []byte(""))
