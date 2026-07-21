@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2 - 2026-07-21
+
+- Resolved sampctl build and installed dependency include paths.
+
 All notable changes to this project are documented in this file. The
 format loosely follows [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/)

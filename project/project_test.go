@@ -1,6 +1,7 @@
 package project
 
 import (
+	"slices"
 	"sync"
 	"testing"
 
@@ -94,6 +95,59 @@ func TestLoad_QuotedIncludesUseEntryDirectory(t *testing.T) {
 	)
 	if !ok || got != "/proj/gamemodes/modules/player/joining.pwn" {
 		t.Fatalf("Resolve() = (%q, %v)", got, ok)
+	}
+}
+
+func TestLoad_UsesSampctlIncludeLayout(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/pawn.json", []byte(`{
+		"entry":"gamemodes/main.pwn",
+		"build":{"includes":["legacy"]},
+		"dependencies":["sampctl/samp-stdlib","example/pawn-map"]
+	}`))
+	m.AddFile("/proj/gamemodes/main.pwn", []byte(""))
+	m.AddFile("/proj/legacy/legacy.inc", []byte(""))
+	m.AddFile("/proj/local.inc", []byte(""))
+	m.AddFile("/proj/dependencies/samp-stdlib/a_samp.inc", []byte(""))
+	m.AddFile("/proj/dependencies/pawn-map/pawn.json", []byte(`{"include_path":"include"}`))
+	m.AddFile("/proj/dependencies/pawn-map/include/map.inc", []byte(""))
+	m.AddFile("/proj/dependencies/.resources/sscanf/sscanf2.inc", []byte(""))
+
+	p, err := Load(source.NewRegistry(), m, "/proj", Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{
+		"/proj/legacy",
+		"/proj/gamemodes",
+		"/proj",
+		"/proj/dependencies/.resources/sscanf",
+		"/proj/dependencies/pawn-map/include",
+		"/proj/dependencies/samp-stdlib",
+	}
+	if got := p.Paths().IncludeRoots; !slices.Equal(got, want) {
+		t.Fatalf("include roots = %v, want %v", got, want)
+	}
+	for _, include := range []string{"legacy", "local", "map", "a_samp", "sscanf2"} {
+		if _, ok := p.IncludeResolver().Resolve(p.Paths().Entry, include, false); !ok {
+			t.Errorf("include %q was not resolved", include)
+		}
+	}
+}
+
+func TestLoad_DependencyWithLegacyResourceShape(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/pawn.json", []byte(`{"entry":"gamemodes/main.pwn"}`))
+	m.AddFile("/proj/gamemodes/main.pwn", []byte(""))
+	m.AddFile("/proj/dependencies/memory/pawn.json", []byte(`{"resources":[]}`))
+	m.AddFile("/proj/dependencies/memory/include/memory.inc", []byte(""))
+
+	p, err := Load(source.NewRegistry(), m, "/proj", Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := p.IncludeResolver().Resolve(p.Paths().Entry, "memory", false); !ok {
+		t.Fatal("dependency include fallback was not resolved")
 	}
 }
 

@@ -49,7 +49,7 @@ Lower-level packages do not import `project`. This lets a consumer use path or m
 
 PawnKit does not replace sampctl's manifest. `pawn-project` reads the existing `pawn.json` and `pawn.yaml` fields, including sampctl dependency strings. PawnKit-specific settings live under the optional `pawnkit` object.
 
-This module models resolved dependencies but does not fetch packages or implement `sampctl ensure`. The field-by-field status is in [compatibility.md](compatibility.md).
+This module does not fetch packages or implement `sampctl ensure`. When sampctl has populated `dependencies/`, those package and resource include paths join the project resolver. The field-by-field status is in [compatibility.md](compatibility.md).
 
 ## Design choices
 

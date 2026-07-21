@@ -18,7 +18,7 @@ This table tracks sampctl fields formalized by PawnKit RFC 0002. "Supported" mea
 | `contributors` | Yes | decoded as `[]any` (string or object form) |
 | `website` | Yes | decoded |
 | `experimental.build_file` | Yes | drives `paths.Resolved.GeneratedFiles` (defaults to `true` per schema) |
-| `build` / `builds[]` | Yes | single or named-array form; `builds[].name` required, enforced |
+| `build` / `builds[]` | Yes | single or named-array form; `builds[].name` required; active build include paths are resolved |
 | `runtime` / `runtimes[]` | Yes | single or named-array form; `runtimes[].name` required, enforced; only fields `pawn-project` itself reasons about are named explicitly (`name`, `version`, `mode`, `port`, `gamemodes`, `filterscripts`, `plugins`); the rest round-trip through `Extra` |
 | `pawnkit.schemaVersion` | Yes | required when `pawnkit` present; only `1` currently supported |
 | `pawnkit.profile` | Yes | overrides preset-based mapping; pattern-validated |
