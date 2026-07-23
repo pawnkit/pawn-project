@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4 - 2026-07-23
+
+### Fixed
+
+- Kept project include roots platform-independent on Windows.
+
 ## 0.1.3 - 2026-07-21
 
 - Resolved padded and dotted include names used by existing Pawn projects.

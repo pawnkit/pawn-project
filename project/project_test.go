@@ -53,6 +53,10 @@ func TestLoad_FullyResolvedProject(t *testing.T) {
 		t.Errorf("Paths.Entry = %q", p.Paths().Entry)
 	}
 
+	if !slices.Contains(p.Paths().IncludeRoots, "/proj/gamemodes") {
+		t.Errorf("Paths.IncludeRoots = %q", p.Paths().IncludeRoots)
+	}
+
 	if p.Lockfile() == nil {
 		t.Fatal("expected lockfile to be loaded")
 	}

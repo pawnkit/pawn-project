@@ -3,7 +3,6 @@ package project
 
 import (
 	"fmt"
-	"path/filepath"
 	"slices"
 
 	"github.com/pawnkit/pawnkit-core/diagnostic"
@@ -73,7 +72,7 @@ func Load(reg *source.Registry, fsys fsx.FS, start string, opts Options) (*Proje
 
 	var quotedRoots []string
 	if resolved.Entry != "" {
-		quotedRoots = append(quotedRoots, filepath.Dir(resolved.Entry))
+		quotedRoots = append(quotedRoots, pathutil.Dir(resolved.Entry))
 	}
 
 	p := &Project{
@@ -121,7 +120,7 @@ func projectIncludeRoots(
 		}
 	}
 	if entry != "" {
-		roots = appendUnique(roots, filepath.Dir(entry))
+		roots = appendUnique(roots, pathutil.Dir(entry))
 	}
 	roots = appendUnique(roots, root)
 	for _, path := range declared {
