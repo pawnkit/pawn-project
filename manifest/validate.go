@@ -42,7 +42,7 @@ func (v *validator) checkPreset() {
 		return
 	}
 
-	if v.m.Preset != "samp" && v.m.Preset != "openmp" {
+	if v.m.Preset != ProfileSAMP && v.m.Preset != ProfileOpenMP {
 		v.add(CodeInvalidPreset, diagnostic.SeverityError,
 			`preset %q is not one of "samp", "openmp"`, v.m.Preset)
 	}

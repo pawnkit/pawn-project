@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.10 - 2026-07-23
+
+### Added
+
+- Added canonical manifest creation and JSON encoding.
+
 ## 0.1.9 - 2026-07-23
 
 ### Fixed
