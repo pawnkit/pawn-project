@@ -109,45 +109,60 @@ func (r *Resolver) Complete(fromFile, prefix string, quoted bool, limit int) []C
 // Resolve finds spec from fromFile. Quoted includes search the source
 // directory first. Missing extensions are retried with ".inc".
 func (r *Resolver) Resolve(fromFile, spec string, quoted bool) (string, bool) {
+	matches := r.ResolveAll(fromFile, spec, quoted)
+	if len(matches) == 0 {
+		return "", false
+	}
+
+	return matches[0], true
+}
+
+// ResolveAll returns matching include paths in search order.
+func (r *Resolver) ResolveAll(fromFile, spec string, quoted bool) []string {
 	candidates := searchCandidates(spec)
 	normalized := pathutil.ToSlash(strings.TrimSpace(spec))
-	if strings.HasPrefix(normalized, "./") || strings.HasPrefix(normalized, "../") {
-		if p, ok := r.tryRelative(pathutil.Dir(pathutil.Clean(fromFile)), candidates); ok {
-			return p, true
+	var matches []string
+	seen := make(map[string]bool)
+	add := func(paths ...string) {
+		for _, candidate := range paths {
+			if seen[candidate] {
+				continue
+			}
+			seen[candidate] = true
+			matches = append(matches, candidate)
 		}
+	}
+	if strings.HasPrefix(normalized, "./") || strings.HasPrefix(normalized, "../") {
+		add(r.relativeMatches(pathutil.Dir(pathutil.Clean(fromFile)), candidates)...)
+		return matches
 	}
 
 	if quoted {
 		fromDir := pathutil.Dir(pathutil.Clean(fromFile))
 
-		if p, ok := r.tryDir(fromDir, candidates); ok {
-			return p, true
-		}
+		add(r.dirMatches(fromDir, candidates)...)
 
 		for _, root := range r.quotedRoots {
-			if p, ok := r.tryDir(root, candidates); ok {
-				return p, true
-			}
+			add(r.dirMatches(root, candidates)...)
 		}
 	}
 
 	for _, root := range r.roots {
-		if p, ok := r.tryDir(root, candidates); ok {
-			return p, true
-		}
+		add(r.dirMatches(root, candidates)...)
 	}
 
-	return "", false
+	return matches
 }
 
-func (r *Resolver) tryRelative(dir string, candidates []string) (string, bool) {
+func (r *Resolver) relativeMatches(dir string, candidates []string) []string {
+	var matches []string
 	for _, candidate := range candidates {
 		path := pathutil.Join(dir, candidate)
 		if r.withinRoot(path) && fsx.IsFile(r.fsys, path) {
-			return path, true
+			matches = append(matches, path)
 		}
 	}
-	return "", false
+	return matches
 }
 
 func (r *Resolver) withinRoot(path string) bool {
@@ -161,7 +176,8 @@ func (r *Resolver) withinRoot(path string) bool {
 	return false
 }
 
-func (r *Resolver) tryDir(dir string, candidates []string) (string, bool) {
+func (r *Resolver) dirMatches(dir string, candidates []string) []string {
+	var matches []string
 	for _, c := range candidates {
 		p, err := pathutil.SafeJoin(dir, c)
 		if err != nil {
@@ -169,11 +185,11 @@ func (r *Resolver) tryDir(dir string, candidates []string) (string, bool) {
 		}
 
 		if fsx.IsFile(r.fsys, p) {
-			return p, true
+			matches = append(matches, p)
 		}
 	}
 
-	return "", false
+	return matches
 }
 
 func searchCandidates(spec string) []string {

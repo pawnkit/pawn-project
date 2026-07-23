@@ -3,6 +3,7 @@ package include
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/pawnkit/pawn-project/fsx"
@@ -156,6 +157,21 @@ func TestResolve_MultipleRootsInOrder(t *testing.T) {
 	got, ok := r.Resolve("/proj/gamemodes/main.pwn", "y_hooks", false)
 	if !ok || got != "/proj/vendor/YSI/y_hooks.inc" {
 		t.Errorf("got (%q, %v), want first root to win", got, ok)
+	}
+}
+
+func TestResolveAllReturnsOrderedUniqueMatches(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/local/shared.inc", nil)
+	m.AddFile("/proj/first/shared.inc", nil)
+	m.AddFile("/proj/second/shared.inc", nil)
+
+	r := NewWithQuotedRoots(m, []string{"/proj/first", "/proj/second"}, []string{"/proj/local"})
+
+	got := r.ResolveAll("/proj/local/main.pwn", "shared", true)
+	want := []string{"/proj/local/shared.inc", "/proj/first/shared.inc", "/proj/second/shared.inc"}
+	if !slices.Equal(got, want) {
+		t.Fatalf("ResolveAll() = %v, want %v", got, want)
 	}
 }
 
