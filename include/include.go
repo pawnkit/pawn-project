@@ -138,13 +138,12 @@ func (r *Resolver) ResolveAll(fromFile, spec string, quoted bool) []string {
 	}
 
 	if quoted {
-		fromDir := pathutil.Dir(pathutil.Clean(fromFile))
-
-		add(r.dirMatches(fromDir, candidates)...)
-
 		for _, root := range r.quotedRoots {
 			add(r.dirMatches(root, candidates)...)
 		}
+
+		fromDir := pathutil.Dir(pathutil.Clean(fromFile))
+		add(r.dirMatches(fromDir, candidates)...)
 	}
 
 	for _, root := range r.roots {

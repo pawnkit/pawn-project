@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.8 - 2026-07-23
+
+### Fixed
+
+- Kept the entry directory first for nested quoted includes.
+
 ## 0.1.7 - 2026-07-23
 
 ### Added

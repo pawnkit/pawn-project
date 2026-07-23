@@ -57,6 +57,21 @@ func TestResolve_QuotedUsesEntryDirectory(t *testing.T) {
 	}
 }
 
+func TestResolve_QuotedKeepsEntryDirectoryForNestedIncludes(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/gamemodes/main.pwn", nil)
+	m.AddFile("/proj/gamemodes/parts/first.inc", []byte(`#include "parts/second"`))
+	m.AddFile("/proj/gamemodes/parts/second.inc", nil)
+	m.AddFile("/proj/gamemodes/parts/parts/second.inc", nil)
+
+	r := NewWithQuotedRoots(m, []string{"/proj"}, []string{"/proj/gamemodes"})
+
+	got, ok := r.Resolve("/proj/gamemodes/parts/first.inc", "parts/second", true)
+	if !ok || got != "/proj/gamemodes/parts/second.inc" {
+		t.Fatalf("Resolve() = (%q, %v)", got, ok)
+	}
+}
+
 func TestResolve_AngleBracketSkipsQuotedRoots(t *testing.T) {
 	m := fsx.NewMem()
 	m.AddFile("/proj/gamemodes/modules/player.inc", []byte(""))
