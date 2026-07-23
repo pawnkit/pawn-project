@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5 - 2026-07-23
+
+### Added
+
+- Added bounded include-path candidates for editor completion.
+
 ## 0.1.4 - 2026-07-23
 
 ### Fixed

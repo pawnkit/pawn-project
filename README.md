@@ -42,6 +42,9 @@ func main() {
 
 The loader accepts a project directory or a file inside one. It returns diagnostics for project problems instead of failing at the first bad field. Environment failures, such as an unreadable manifest, are returned as errors.
 
+Use `IncludeResolver().Complete` when an editor needs include-path candidates.
+The result follows the same root order and path rules as include resolution.
+
 See [`examples/basic`](examples/basic) for a runnable example.
 
 ## Manifest compatibility

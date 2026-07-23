@@ -2,6 +2,8 @@
 package include
 
 import (
+	"path"
+	"sort"
 	"strings"
 
 	"github.com/pawnkit/pawn-project/fsx"
@@ -13,6 +15,12 @@ type Resolver struct {
 	fsys        fsx.FS
 	roots       []string
 	quotedRoots []string
+}
+
+// Candidate is an include path offered by an editor.
+type Candidate struct {
+	Path      string
+	Directory bool
 }
 
 // New builds a Resolver from ordered, absolute roots.
@@ -40,6 +48,62 @@ func (r *Resolver) Roots() []string {
 	copy(out, r.roots)
 
 	return out
+}
+
+// Complete lists include paths below the typed prefix.
+func (r *Resolver) Complete(fromFile, prefix string, quoted bool, limit int) []Candidate {
+	if r == nil || limit <= 0 {
+		return nil
+	}
+	limit = min(limit, 200)
+	prefix = pathutil.ToSlash(strings.TrimSpace(prefix))
+	if strings.HasPrefix(prefix, "/") || strings.Contains(prefix, "../") || prefix == ".." {
+		return nil
+	}
+	directory, partial := path.Split(prefix)
+	roots := make([]string, 0, len(r.roots)+len(r.quotedRoots)+1)
+	if quoted {
+		roots = append(roots, pathutil.Dir(pathutil.Clean(fromFile)))
+		roots = append(roots, r.quotedRoots...)
+	}
+	roots = append(roots, r.roots...)
+	seen := make(map[string]bool)
+	var candidates []Candidate
+	for _, root := range roots {
+		base, err := pathutil.SafeJoin(root, directory)
+		if err != nil {
+			continue
+		}
+		entries, err := r.fsys.ReadDir(base)
+		if err != nil {
+			continue
+		}
+		sort.Slice(entries, func(i, j int) bool { return strings.ToLower(entries[i].Name()) < strings.ToLower(entries[j].Name()) })
+		for _, entry := range entries {
+			name := entry.Name()
+			if strings.HasPrefix(name, ".") || !strings.HasPrefix(strings.ToLower(name), strings.ToLower(partial)) {
+				continue
+			}
+			candidate := path.Join(directory, name)
+			switch {
+			case entry.IsDir():
+				candidate += "/"
+			case strings.EqualFold(path.Ext(candidate), ".inc"):
+				candidate = strings.TrimSuffix(candidate, path.Ext(candidate))
+			case !strings.EqualFold(path.Ext(candidate), ".pwn"):
+				continue
+			}
+			if seen[candidate] {
+				continue
+			}
+			seen[candidate] = true
+			candidates = append(candidates, Candidate{Path: candidate, Directory: entry.IsDir()})
+			if len(candidates) == limit {
+				return candidates
+			}
+		}
+	}
+	return candidates
 }
 
 // Resolve finds spec from fromFile. Quoted includes search the source

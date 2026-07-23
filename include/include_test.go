@@ -169,6 +169,38 @@ func TestResolve_NotFound(t *testing.T) {
 	}
 }
 
+func TestCompleteIncludesRootsAndRelativeFiles(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/gamemodes/local.inc", nil)
+	m.AddFile("/proj/include/a_samp.inc", nil)
+	m.AddFile("/proj/include/YSI_Coding/y_hooks.inc", nil)
+	m.AddFile("/proj/include/readme.txt", nil)
+	r := New(m, []string{"/proj/include"})
+
+	got := r.Complete("/proj/gamemodes/main.pwn", "", true, 20)
+	if len(got) != 3 || got[0].Path != "local" || got[1].Path != "a_samp" || got[2].Path != "YSI_Coding/" || !got[2].Directory {
+		t.Fatalf("Complete() = %+v", got)
+	}
+	got = r.Complete("/proj/gamemodes/main.pwn", "YSI_Coding/y", false, 20)
+	if len(got) != 1 || got[0].Path != "YSI_Coding/y_hooks" {
+		t.Fatalf("nested Complete() = %+v", got)
+	}
+}
+
+func TestCompleteRejectsTraversalAndBoundsResults(t *testing.T) {
+	m := fsx.NewMem()
+	for _, name := range []string{"a.inc", "b.inc", "c.inc"} {
+		m.AddFile("/proj/include/"+name, nil)
+	}
+	r := New(m, []string{"/proj/include"})
+	if got := r.Complete("/proj/main.pwn", "../", true, 20); len(got) != 0 {
+		t.Fatalf("traversal candidates = %+v", got)
+	}
+	if got := r.Complete("/proj/main.pwn", "", false, 2); len(got) != 2 {
+		t.Fatalf("bounded candidates = %+v", got)
+	}
+}
+
 func TestResolve_TraversalSpecRejected(t *testing.T) {
 	m := fsx.NewMem()
 	m.AddFile("/etc/passwd", []byte("root:x:0:0"))
