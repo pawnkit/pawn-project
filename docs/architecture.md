@@ -39,6 +39,7 @@ Content problems become diagnostics with stable codes. Environment failures, suc
 | `include` | Deterministic include resolution |
 | `toolconfig` | Standalone and manifest tool settings |
 | `toolchain` | Compiler discovery, verified downloads, and cache management |
+| `backend` | Resolved build-backend protocol messages |
 | `doctor` | Checks that do not execute project code |
 | `fingerprint` | Stable project cache keys |
 | `project` | The assembled read-only project model |

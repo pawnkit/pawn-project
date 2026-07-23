@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0 - 2026-07-23
+
+### Added
+
+- Added build-backend protocol types and resolved request construction.
+
 ## 0.1.10 - 2026-07-23
 
 ### Added

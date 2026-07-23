@@ -46,6 +46,8 @@ Use `IncludeResolver().Complete` when an editor needs include-path candidates.
 The result follows the same root order and path rules as include resolution.
 Tools can pass absolute managed include directories through
 `Options.ManagedIncludeRoots`; they are searched after project dependencies.
+Use `Project.BackendRequest` to pass the same resolved profile, paths, defines,
+and compiler choice to a build backend.
 
 See [`examples/basic`](examples/basic) for a runnable example.
 
