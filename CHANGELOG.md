@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.6 - 2026-07-23
+
+### Added
+
+- Added managed include roots to the project model.
+- Added corpus tests for SA-MP and open.mp projects.
+
 ## 0.1.5 - 2026-07-23
 
 ### Added

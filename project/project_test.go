@@ -155,6 +155,68 @@ func TestLoad_DependencyWithLegacyResourceShape(t *testing.T) {
 	}
 }
 
+func TestLoad_UsesManagedIncludeRoots(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/pawn.json", []byte(`{"entry":"main.pwn"}`))
+	m.AddFile("/proj/main.pwn", []byte("#include <pawntest>"))
+	m.AddFile("/proj/shared.inc", []byte("#define SOURCE_PROJECT"))
+	m.AddFile("/tools/pawntest/include/pawntest.inc", []byte("#define TEST(%0)"))
+	m.AddFile("/tools/pawntest/include/shared.inc", []byte("#define SOURCE_TOOL"))
+
+	p, err := Load(source.NewRegistry(), m, "/proj", Options{
+		ManagedIncludeRoots: []string{"/tools/pawntest/include"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(p.Paths().IncludeRoots, "/tools/pawntest/include") {
+		t.Fatalf("include roots = %v", p.Paths().IncludeRoots)
+	}
+	if _, ok := p.IncludeResolver().Resolve(p.Paths().Entry, "pawntest", false); !ok {
+		t.Fatal("managed include was not resolved")
+	}
+	resolved, ok := p.IncludeResolver().Resolve(p.Paths().Entry, "shared", false)
+	if !ok || resolved != "/proj/shared.inc" {
+		t.Fatalf("project include priority = (%q, %v)", resolved, ok)
+	}
+}
+
+func TestLoad_RejectsRelativeManagedIncludeRoot(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/pawn.json", []byte(`{"entry":"main.pwn"}`))
+	m.AddFile("/proj/main.pwn", nil)
+
+	if _, err := Load(source.NewRegistry(), m, "/proj", Options{
+		ManagedIncludeRoots: []string{"tools/include"},
+	}); err == nil {
+		t.Fatal("relative managed include root was accepted")
+	}
+}
+
+func TestLoad_PreservesSpacesAndFilesystemCase(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/Project Space/pawn.json", []byte(`{
+		"entry":"Game Modes/main.pwn",
+		"pawnkit":{"schemaVersion":1,"includePaths":["Include Files"]}
+	}`))
+	m.AddFile("/Project Space/Game Modes/main.pwn", []byte("#include <Case>"))
+	m.AddFile("/Project Space/Include Files/Case.inc", nil)
+
+	p, err := Load(source.NewRegistry(), m, "/Project Space/Game Modes/main.pwn", Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.Paths().Entry != "/Project Space/Game Modes/main.pwn" {
+		t.Fatalf("entry = %q", p.Paths().Entry)
+	}
+	if _, ok := p.IncludeResolver().Resolve(p.Paths().Entry, "Case", false); !ok {
+		t.Fatal("include with matching case was not resolved")
+	}
+	if _, ok := p.IncludeResolver().Resolve(p.Paths().Entry, "case", false); ok {
+		t.Fatal("case mismatch resolved on a case-sensitive filesystem")
+	}
+}
+
 func TestLoad_NoLockfileIsFine(t *testing.T) {
 	m := fsx.NewMem()
 	m.AddFile("/proj/pawn.json", []byte(`{"entry": "a.pwn"}`))
@@ -212,6 +274,37 @@ func TestLoad_ProfileOverride(t *testing.T) {
 
 	if p.Selection().ProfileID != "openmp" {
 		t.Fatalf("ProfileID = %q", p.Selection().ProfileID)
+	}
+}
+
+func TestLoad_ExposesBuildContract(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/pawn.json", []byte(`{
+		"entry":"main.pwn",
+		"dependencies":["owner/library:v1.0.0"],
+		"build":{
+			"constants":{"FEATURE":"1"},
+			"compiler":{"site":"github.com","user":"pawn-lang","repo":"compiler","version":"3.10.10"}
+		}
+	}`))
+	m.AddFile("/proj/main.pwn", nil)
+
+	p, err := Load(source.NewRegistry(), m, "/proj", Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	build := p.Selection().Build
+	if build == nil || build.Constants["FEATURE"] != "1" {
+		t.Fatalf("build = %+v", build)
+	}
+	if build.Compiler == nil || build.Compiler.Version != "3.10.10" {
+		t.Fatalf("compiler = %+v", build.Compiler)
+	}
+	if len(p.Manifest().Dependencies) != 1 {
+		t.Fatalf("dependencies = %+v", p.Manifest().Dependencies)
+	}
+	if !slices.Contains(p.Paths().GeneratedFiles, "/proj/sampctl_build_file.inc") {
+		t.Fatalf("generated files = %v", p.Paths().GeneratedFiles)
 	}
 }
 

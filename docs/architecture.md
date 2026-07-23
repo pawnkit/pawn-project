@@ -69,6 +69,12 @@ Manifest, include, lockfile, and archive paths are cleaned and checked for trave
 
 `Project` has no setters. Consumers may read one project from multiple goroutines; the test suite checks this under the race detector.
 
+### Managed includes still use the project model
+
+Editors and test tools may install headers outside a workspace. They pass
+those absolute directories through `project.Options.ManagedIncludeRoots`.
+Project and dependency paths keep priority.
+
 ## Ownership
 
 This repository owns project discovery and configuration. It does not own Pawn syntax, semantic analysis, API metadata, or the shared diagnostic model.

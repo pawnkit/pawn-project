@@ -44,6 +44,8 @@ The loader accepts a project directory or a file inside one. It returns diagnost
 
 Use `IncludeResolver().Complete` when an editor needs include-path candidates.
 The result follows the same root order and path rules as include resolution.
+Tools can pass absolute managed include directories through
+`Options.ManagedIncludeRoots`; they are searched after project dependencies.
 
 See [`examples/basic`](examples/basic) for a runnable example.
 

@@ -31,6 +31,10 @@ tasks:
     cmds:
       - CGO_ENABLED=1 go test -race -shuffle=on ./...
 
+  corpus:
+    cmds:
+      - PAWN_CORPUS_DIR="$(cd "${PAWN_CORPUS_DIR:-../pawn-corpus}" && pwd)" go test -count=1 ./...
+
   check:
     desc: Everything CI runs.
     cmds:

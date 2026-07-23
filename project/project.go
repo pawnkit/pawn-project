@@ -23,6 +23,8 @@ import (
 type Options struct {
 	// Profile contains profile, build, and runtime overrides.
 	Profile profile.Options
+	// ManagedIncludeRoots contains absolute include roots supplied by tools.
+	ManagedIncludeRoots []string
 }
 
 // Project is the resolved view of a Pawn workspace.
@@ -65,7 +67,9 @@ func Load(reg *source.Registry, fsys fsx.FS, start string, opts Options) (*Proje
 	if err != nil {
 		return nil, fmt.Errorf("project: resolving paths: %w", err)
 	}
-	resolved.IncludeRoots, err = projectIncludeRoots(fsys, reg, root.Dir, resolved.Entry, selection, resolved.IncludeRoots)
+	resolved.IncludeRoots, err = projectIncludeRoots(
+		fsys, reg, root.Dir, resolved.Entry, selection, resolved.IncludeRoots, opts.ManagedIncludeRoots,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("project: resolving includes: %w", err)
 	}
@@ -108,6 +112,7 @@ func projectIncludeRoots(
 	entry string,
 	selection profile.Selection,
 	declared []string,
+	managed []string,
 ) ([]string, error) {
 	var roots []string
 	if selection.Build != nil {
@@ -128,6 +133,12 @@ func projectIncludeRoots(
 	}
 	for _, path := range installedDependencyRoots(fsys, reg, root) {
 		roots = appendUnique(roots, path)
+	}
+	for _, path := range managed {
+		if !pathutil.IsAbs(path) {
+			return nil, fmt.Errorf("managed include root %q must be absolute", path)
+		}
+		roots = appendUnique(roots, pathutil.Clean(path))
 	}
 	return roots, nil
 }
