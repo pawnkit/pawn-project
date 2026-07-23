@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.9 - 2026-07-23
+
+### Fixed
+
+- Matched include completion order to include resolution.
+
 ## 0.1.8 - 2026-07-23
 
 ### Fixed

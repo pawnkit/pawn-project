@@ -218,6 +218,18 @@ func TestCompleteIncludesRootsAndRelativeFiles(t *testing.T) {
 	}
 }
 
+func TestCompleteKeepsQuotedRootOrder(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/gamemodes/parts/z_root.inc", nil)
+	m.AddFile("/proj/gamemodes/parts/parts/a_local.inc", nil)
+	r := NewWithQuotedRoots(m, nil, []string{"/proj/gamemodes"})
+
+	got := r.Complete("/proj/gamemodes/parts/first.inc", "parts/", true, 20)
+	if len(got) != 3 || got[0].Path != "parts/parts/" || got[1].Path != "parts/z_root" || got[2].Path != "parts/a_local" {
+		t.Fatalf("Complete() = %+v", got)
+	}
+}
+
 func TestCompleteRejectsTraversalAndBoundsResults(t *testing.T) {
 	m := fsx.NewMem()
 	for _, name := range []string{"a.inc", "b.inc", "c.inc"} {

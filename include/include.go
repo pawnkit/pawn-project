@@ -63,8 +63,8 @@ func (r *Resolver) Complete(fromFile, prefix string, quoted bool, limit int) []C
 	directory, partial := path.Split(prefix)
 	roots := make([]string, 0, len(r.roots)+len(r.quotedRoots)+1)
 	if quoted {
-		roots = append(roots, pathutil.Dir(pathutil.Clean(fromFile)))
 		roots = append(roots, r.quotedRoots...)
+		roots = append(roots, pathutil.Dir(pathutil.Clean(fromFile)))
 	}
 	roots = append(roots, r.roots...)
 	seen := make(map[string]bool)
