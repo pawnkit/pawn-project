@@ -5,7 +5,7 @@ import "github.com/pawnkit/pawnkit-core/protocol"
 
 const (
 	ProtocolVersion = 1
-	SchemaVersion   = 1
+	SchemaVersion   = 2
 )
 
 type Operation string

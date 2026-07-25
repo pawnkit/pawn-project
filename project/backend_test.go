@@ -38,7 +38,7 @@ func TestBackendRequestUsesResolvedProject(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if request.Kind != "request" || request.SchemaVersion != 1 || request.Operation != backend.Build {
+	if request.Kind != "request" || request.SchemaVersion != backend.SchemaVersion || request.Operation != backend.Build {
 		t.Fatalf("identity = %+v", request)
 	}
 	if request.ProjectRoot != "/project" || request.Profile != "openmp" || request.Target != "openmp-server" {

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0 - 2026-07-25
+
+### Changed
+
+- Emit build-backend schema v2 with diagnostic v2 results.
+
 ## 0.2.0 - 2026-07-23
 
 ### Added
