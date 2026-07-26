@@ -101,3 +101,12 @@ jobs:
         env:
           PAWN_CORPUS_DIR: ${{ github.workspace }}/pawn-corpus
         run: go test -count=1 ./...
+
+  support:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: pawnkit/pawn-actions/support-check@v1.6.1
+        with:
+          repository: pawnkit/pawn-project
+          targets: linux-amd64

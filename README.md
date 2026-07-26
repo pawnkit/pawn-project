@@ -1,5 +1,7 @@
 # pawn-project
 
+[![Maturity: preview](https://img.shields.io/badge/maturity-preview-blue)](.pawnkit/support.json)
+
 `pawn-project` gives PawnKit tools one answer to a basic question: which project does this Pawn file belong to, and how is that project built?
 
 It finds the workspace, reads `pawn.json` or `pawn.yaml`, loads `pawn.lock`, resolves include paths, and selects the requested build and runtime profile. The formatter, linter, language server, test runner, and CLI all use the same result.
