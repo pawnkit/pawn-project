@@ -36,11 +36,22 @@ func TestClean(t *testing.T) {
 		{"", "."},
 		{"a//b", "a/b"},
 		{"/", "/"},
+		{"a/", "a"},
+		{"C:", "C:."},
+		{"C:/", "C:/"},
 	}
 
 	for _, c := range cases {
 		if got := Clean(c.in); got != c.want {
 			t.Errorf("Clean(%q) = %q, want %q", c.in, got, c.want)
+		}
+	}
+}
+
+func BenchmarkCleanCanonical(b *testing.B) {
+	for b.Loop() {
+		if got := Clean("/workspace/project/include/shared.inc"); got != "/workspace/project/include/shared.inc" {
+			b.Fatal(got)
 		}
 	}
 }

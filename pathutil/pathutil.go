@@ -50,6 +50,9 @@ func IsAbs(p string) bool {
 
 // Clean normalizes separators and simplifies a path without filesystem access.
 func Clean(p string) string {
+	if cleanPath(p) {
+		return p
+	}
 	s := ToSlash(p)
 	vol := VolumeName(s)
 	rest := s[len(vol):]
@@ -83,6 +86,28 @@ func Clean(p string) string {
 	}
 
 	return vol + cleaned
+}
+
+func cleanPath(p string) bool {
+	if p == "." || p == "/" {
+		return true
+	}
+	if p == "" || strings.ContainsRune(p, '\\') || strings.HasSuffix(p, "/") || strings.Contains(p, "//") {
+		return false
+	}
+	rest := p[len(VolumeName(p)):]
+	if rest == "" {
+		return false
+	}
+	if rest[0] == '/' {
+		rest = rest[1:]
+	}
+	for segment := range strings.SplitSeq(rest, "/") {
+		if segment == "" || segment == "." || segment == ".." {
+			return false
+		}
+	}
+	return true
 }
 
 // Join joins path elements with "/" and cleans the result.
