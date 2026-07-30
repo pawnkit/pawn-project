@@ -1,8 +1,10 @@
 package toolchain
 
 import (
+	"archive/tar"
 	"archive/zip"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"io"
@@ -51,6 +53,32 @@ func buildZip(t *testing.T, files map[string][]byte) []byte {
 		t.Fatalf("zip.Close: %v", err)
 	}
 
+	return buf.Bytes()
+}
+
+func buildTarGzip(t *testing.T, files map[string][]byte) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	gzipWriter := gzip.NewWriter(&buf)
+	tarWriter := tar.NewWriter(gzipWriter)
+	for name, content := range files {
+		if err := tarWriter.WriteHeader(&tar.Header{
+			Name: name,
+			Mode: 0o600,
+			Size: int64(len(content)),
+		}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := tarWriter.Write(content); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := tarWriter.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := gzipWriter.Close(); err != nil {
+		t.Fatal(err)
+	}
 	return buf.Bytes()
 }
 
@@ -138,6 +166,89 @@ func TestResolve_DownloadsAndCaches(t *testing.T) {
 	}
 	if dl.calls != 1 || info.Checksum != hash.Content([]byte("compiler")) {
 		t.Fatalf("calls=%d info=%+v", dl.calls, info)
+	}
+}
+
+func TestResolveInstallsReviewedTarGzipArtifact(t *testing.T) {
+	compiler := []byte("compiler")
+	archive := buildTarGzip(t, map[string][]byte{
+		"pawn/bin/pawncc":      compiler,
+		"pawn/lib/libpawnc.so": []byte("library"),
+	})
+	artifact := CompilerArtifact{
+		Vendor:  VendorOpenMultiplayer,
+		Version: "3.10.11",
+		Archive: CompilerArchive{
+			URL:      "https://example.test/compiler.tar.gz",
+			Format:   "tar.gz",
+			Size:     int64(len(archive)),
+			Checksum: hash.Content(archive),
+		},
+		Executable: CompilerExecutable{
+			Path:     "pawn/bin/pawncc",
+			Checksum: hash.Content(compiler),
+		},
+	}
+	fsys := newMemCacheFS()
+	info, err := NewResolver(fsys, "/cache", &fakeDownloader{data: archive}, nil).
+		Update(context.Background(), artifact.ResolveOptions())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Path != "/cache/openmultiplayer/3.10.11/pawn/bin/pawncc" ||
+		info.Checksum != hash.Content(compiler) {
+		t.Fatalf("info = %+v", info)
+	}
+}
+
+func TestResolveRejectsReviewedArtifactSizeMismatch(t *testing.T) {
+	archive := buildTarGzip(t, map[string][]byte{"pawncc": []byte("compiler")})
+	opts := ResolveOptions{
+		Vendor:         VendorPawnLang,
+		Version:        "3.10.10",
+		DownloadURL:    "https://example.test/compiler.tar.gz",
+		ExpectedSize:   int64(len(archive) + 1),
+		ArchiveFormat:  "tar.gz",
+		ExecutablePath: "pawncc",
+	}
+	_, err := NewResolver(newMemCacheFS(), "/cache", &fakeDownloader{data: archive}, nil).
+		Update(context.Background(), opts)
+	if err == nil {
+		t.Fatal("size mismatch accepted")
+	}
+}
+
+func TestResolveRejectsReviewedExecutableChecksumMismatch(t *testing.T) {
+	archive := buildTarGzip(t, map[string][]byte{"pawncc": []byte("compiler")})
+	opts := ResolveOptions{
+		Vendor:                     VendorPawnLang,
+		Version:                    "3.10.10",
+		DownloadURL:                "https://example.test/compiler.tar.gz",
+		ExpectedChecksum:           hash.Content(archive),
+		ArchiveFormat:              "tar.gz",
+		ExecutablePath:             "pawncc",
+		ExpectedExecutableChecksum: hash.Content([]byte("other")),
+	}
+	_, err := NewResolver(newMemCacheFS(), "/cache", &fakeDownloader{data: archive}, nil).
+		Update(context.Background(), opts)
+	if !errors.Is(err, ErrChecksumMismatch) {
+		t.Fatalf("error = %v, want ErrChecksumMismatch", err)
+	}
+}
+
+func TestResolveRejectsTarTraversal(t *testing.T) {
+	archive := buildTarGzip(t, map[string][]byte{"../pawncc": []byte("compiler")})
+	opts := ResolveOptions{
+		Vendor:         VendorPawnLang,
+		Version:        "3.10.10",
+		DownloadURL:    "https://example.test/compiler.tar.gz",
+		ArchiveFormat:  "tar.gz",
+		ExecutablePath: "pawncc",
+	}
+	_, err := NewResolver(newMemCacheFS(), "/cache", &fakeDownloader{data: archive}, nil).
+		Update(context.Background(), opts)
+	if !errors.Is(err, ErrArchiveTraversal) {
+		t.Fatalf("error = %v, want ErrArchiveTraversal", err)
 	}
 }
 

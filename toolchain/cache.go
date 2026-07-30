@@ -15,6 +15,9 @@ import (
 const (
 	metadataFileName = "toolchain.json"
 	binaryFileName   = "pawncc"
+	archiveFormatRaw = "raw"
+	archiveFormatZip = "zip"
+	archiveFormatTar = "tar.gz"
 
 	// maxDownloadBytes bounds downloaded artifacts.
 	maxDownloadBytes = 512 * 1024 * 1024
@@ -130,6 +133,12 @@ func (r *Resolver) storeFromDownload(opts ResolveOptions, rc io.Reader) (Info, e
 	if len(data) > maxDownloadBytes {
 		return Info{}, fmt.Errorf("toolchain: download exceeds %d byte limit", maxDownloadBytes)
 	}
+	if opts.ExpectedSize > 0 && int64(len(data)) != opts.ExpectedSize {
+		return Info{}, fmt.Errorf(
+			"toolchain: download size mismatch: got %d, want %d",
+			len(data), opts.ExpectedSize,
+		)
+	}
 
 	sum := hash.Content(data)
 
@@ -148,17 +157,9 @@ func (r *Resolver) storeFromDownload(opts ResolveOptions, rc io.Reader) (Info, e
 		return Info{}, fmt.Errorf("toolchain: creating cache dir %q: %w", stagingDir, err)
 	}
 
-	binary := binaryFileName
-
-	if isZip(data) {
-		extracted, err := extractZip(r.fsys, stagingDir, bytes.NewReader(data), int64(len(data)))
-		if err != nil {
-			return Info{}, err
-		}
-
-		binary = extracted
-	} else if err := r.fsys.WriteFile(stagingDir+"/"+binary, data); err != nil {
-		return Info{}, fmt.Errorf("toolchain: writing %q: %w", stagingDir+"/"+binary, err)
+	binary, err := installDownloadedArtifact(r.fsys, stagingDir, data, opts)
+	if err != nil {
+		return Info{}, err
 	}
 	if executable, ok := r.fsys.(interface{ makeExecutable(string) error }); ok {
 		if err := executable.makeExecutable(stagingDir + "/" + binary); err != nil {
@@ -171,6 +172,12 @@ func (r *Resolver) storeFromDownload(opts ResolveOptions, rc io.Reader) (Info, e
 		return Info{}, fmt.Errorf("toolchain: reading cached binary: %w", err)
 	}
 	binarySum := hash.Content(binaryContent)
+	if opts.ExpectedExecutableChecksum != "" && binarySum != opts.ExpectedExecutableChecksum {
+		return Info{}, fmt.Errorf(
+			"%w: compiler executable got %s, want %s",
+			ErrChecksumMismatch, binarySum, opts.ExpectedExecutableChecksum,
+		)
+	}
 	meta := cacheMetadata{Vendor: opts.Vendor, Version: opts.Version, Checksum: binarySum, ArtifactChecksum: sum, Binary: binary}
 
 	metaJSON, err := json.Marshal(meta)
@@ -191,6 +198,40 @@ func (r *Resolver) storeFromDownload(opts ResolveOptions, rc io.Reader) (Info, e
 		return Info{}, err
 	}
 	return info, nil
+}
+
+func installDownloadedArtifact(
+	fsys CacheFS,
+	stagingDir string,
+	data []byte,
+	opts ResolveOptions,
+) (string, error) {
+	switch {
+	case opts.ArchiveFormat == archiveFormatZip || opts.ArchiveFormat == "" && isZip(data):
+		return extractZip(
+			fsys, stagingDir, bytes.NewReader(data), int64(len(data)), opts.ExecutablePath,
+		)
+	case opts.ArchiveFormat == archiveFormatTar:
+		return extractTarGzip(fsys, stagingDir, bytes.NewReader(data), opts.ExecutablePath)
+	case opts.ArchiveFormat == "", opts.ArchiveFormat == archiveFormatRaw:
+		binary := opts.ExecutablePath
+		if binary == "" {
+			binary = binaryFileName
+		}
+		binaryPath, err := pathutil.SafeJoin(stagingDir, binary)
+		if err != nil {
+			return "", fmt.Errorf("toolchain: unsafe compiler path %q: %w", binary, err)
+		}
+		if err := fsys.MkdirAll(pathutil.Dir(binaryPath)); err != nil {
+			return "", fmt.Errorf("toolchain: creating compiler directory: %w", err)
+		}
+		if err := fsys.WriteFile(binaryPath, data); err != nil {
+			return "", fmt.Errorf("toolchain: writing %q: %w", binaryPath, err)
+		}
+		return binary, nil
+	default:
+		return "", fmt.Errorf("toolchain: unsupported archive format %q", opts.ArchiveFormat)
+	}
 }
 
 func (r *Resolver) commitCacheEntry(dir, stagingDir, backupDir string) error {

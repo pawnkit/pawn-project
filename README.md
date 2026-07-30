@@ -56,6 +56,8 @@ and compiler choice to a build backend.
 Use `Project.CompilerCoordinate` to select the compiler pinned by the lockfile
 or active build.
 Use `toolchain.LoadIndex` to read a checksum-pinned RFC 0019 compiler index.
+Selected artifacts carry the archive format, size, executable path, and both
+checksums into the resolver.
 Use `toolchain.FindCompiler` when a command should honour the host `PATH`.
 
 See [`examples/basic`](examples/basic) for a runnable example.

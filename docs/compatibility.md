@@ -65,7 +65,8 @@ yet part of RFC 0003.
 | Allow offline mode | Implemented (`ResolveOptions.Offline`); `Resolve` returns `ErrOffline` rather than attempting a download |
 | Never update silently during a deterministic build | Pinned versions never change; use `Offline` to require cache-only resolution |
 | Explicit `update`/`list` operations | Implemented |
-| Archive traversal/size protection | Implemented (`toolchain/archive.go`), tested against a hand-built malicious zip and a corrupt-archive fixture |
+| Reviewed compiler archives | Raw, ZIP, and tar.gz artifacts; exact executable path and checksum verified before caching |
+| Archive traversal/size protection | Implemented for ZIP and tar.gz archives, including entry-count and extracted-size limits |
 
 `HTTPDownloader` accepts HTTPS URLs and an optional `http.Client`. It rejects
 URL credentials and redirects away from HTTPS. The default client has a

@@ -103,6 +103,20 @@ func (index Index) Select(vendor Vendor, version, target string) (CompilerArtifa
 	return CompilerArtifact{}, fmt.Errorf("%w: %s/%s/%s", ErrNotFound, vendor, version, target)
 }
 
+// ResolveOptions returns the verified download settings for the artifact.
+func (artifact CompilerArtifact) ResolveOptions() ResolveOptions {
+	return ResolveOptions{
+		Vendor:                     artifact.Vendor,
+		Version:                    artifact.Version,
+		DownloadURL:                artifact.Archive.URL,
+		ExpectedChecksum:           artifact.Archive.Checksum,
+		ExpectedSize:               artifact.Archive.Size,
+		ArchiveFormat:              artifact.Archive.Format,
+		ExecutablePath:             artifact.Executable.Path,
+		ExpectedExecutableChecksum: artifact.Executable.Checksum,
+	}
+}
+
 func (index Index) validate() error {
 	if index.SchemaVersion != 1 || index.ID == "" || index.GeneratedAt == "" || len(index.Artifacts) == 0 {
 		return errors.New("toolchain: compiler index is missing required fields")
@@ -132,7 +146,7 @@ func (artifact CompilerArtifact) validate() error {
 		return errors.New("toolchain: compiler artifact is missing required fields")
 	}
 	switch artifact.Archive.Format {
-	case "raw", "zip", "tar.gz":
+	case archiveFormatRaw, archiveFormatZip, archiveFormatTar:
 	default:
 		return fmt.Errorf("toolchain: unsupported compiler archive format %q", artifact.Archive.Format)
 	}

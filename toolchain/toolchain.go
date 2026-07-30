@@ -133,6 +133,16 @@ type ResolveOptions struct {
 	// ExpectedChecksum verifies the local or downloaded artifact when set.
 	ExpectedChecksum string
 
+	// ExpectedSize is the exact downloaded artifact size when non-zero.
+	ExpectedSize int64
+
+	// ArchiveFormat and ExecutablePath describe a reviewed artifact layout.
+	ArchiveFormat  string
+	ExecutablePath string
+
+	// ExpectedExecutableChecksum verifies the extracted compiler.
+	ExpectedExecutableChecksum string
+
 	// Offline restricts Resolve to local and cached compilers.
 	Offline bool
 }

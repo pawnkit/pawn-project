@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0 - 2026-07-30
+
+### Added
+
+- Install reviewed raw, ZIP, and tar.gz compiler artifacts.
+- Verify archive size and the extracted compiler checksum before caching.
+
 ## 0.4.0 - 2026-07-30
 
 ### Added
