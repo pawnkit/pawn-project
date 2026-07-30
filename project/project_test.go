@@ -8,6 +8,8 @@ import (
 	"github.com/pawnkit/pawnkit-core/source"
 
 	"github.com/pawnkit/pawn-project/fsx"
+	"github.com/pawnkit/pawn-project/manifest"
+	"github.com/pawnkit/pawn-project/pathutil"
 )
 
 func buildFixture() *fsx.Mem {
@@ -115,7 +117,9 @@ func TestLoad_UsesSampctlIncludeLayout(t *testing.T) {
 	m.AddFile("/proj/dependencies/samp-stdlib/a_samp.inc", []byte(""))
 	m.AddFile("/proj/dependencies/pawn-map/pawn.json", []byte(`{"include_path":"include"}`))
 	m.AddFile("/proj/dependencies/pawn-map/include/map.inc", []byte(""))
-	m.AddFile("/proj/dependencies/.resources/sscanf/sscanf2.inc", []byte(""))
+	m.AddFile("/proj/dependencies/.resources/sscanf-7b5726/sscanf2.inc", []byte(""))
+	m.AddFile("/proj/dependencies/sscanf/pawn.json", []byte(`{"resources":[]}`))
+	m.AddFile("/proj/dependencies/sscanf/sscanf2.inc", []byte(""))
 
 	p, err := Load(source.NewRegistry(), m, "/proj", Options{})
 	if err != nil {
@@ -125,9 +129,9 @@ func TestLoad_UsesSampctlIncludeLayout(t *testing.T) {
 		"/proj/legacy",
 		"/proj/gamemodes",
 		"/proj",
-		"/proj/dependencies/.resources/sscanf",
-		"/proj/dependencies/pawn-map/include",
 		"/proj/dependencies/samp-stdlib",
+		"/proj/dependencies/pawn-map/include",
+		"/proj/dependencies/.resources/sscanf-7b5726",
 	}
 	if got := p.Paths().IncludeRoots; !slices.Equal(got, want) {
 		t.Fatalf("include roots = %v, want %v", got, want)
@@ -136,6 +140,57 @@ func TestLoad_UsesSampctlIncludeLayout(t *testing.T) {
 		if _, ok := p.IncludeResolver().Resolve(p.Paths().Entry, include, false); !ok {
 			t.Errorf("include %q was not resolved", include)
 		}
+	}
+	if got := p.IncludeResolver().ResolveAll(p.Paths().Entry, "sscanf2", false); len(got) != 1 {
+		t.Fatalf("resource candidates = %v, want one extracted resource", got)
+	}
+}
+
+func TestLoad_DoesNotConfusePackageNamePrefixesWithResources(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/pawn.json", []byte(`{"entry":"main.pwn"}`))
+	m.AddFile("/proj/main.pwn", []byte(""))
+	m.AddFile("/proj/dependencies/.resources/streamer-extra-abc123/extra.inc", []byte(""))
+	m.AddFile("/proj/dependencies/streamer/streamer.inc", []byte(""))
+
+	p, err := Load(source.NewRegistry(), m, "/proj", Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := p.IncludeResolver().Resolve(p.Paths().Entry, "streamer", false); !ok {
+		t.Fatal("package was hidden by another resource name")
+	}
+}
+
+func TestInstalledDependencyRoots_ExtractedResources(t *testing.T) {
+	for _, root := range []string{"/proj", `C:\proj`} {
+		t.Run(root, func(t *testing.T) {
+			m := fsx.NewMem()
+			m.AddFile(pathutil.Join(root, "dependencies/.resources/sscanf-7b5726/sscanf2.inc"), nil)
+			m.AddFile(pathutil.Join(root, "dependencies/sscanf/sscanf2.inc"), nil)
+
+			got := installedDependencyRoots(
+				m,
+				source.NewRegistry(),
+				root,
+				[]manifest.Dependency{{Repo: "sscanf"}},
+			)
+			want := []string{pathutil.Join(root, "dependencies/.resources/sscanf-7b5726")}
+			if !slices.Equal(got, want) {
+				t.Fatalf("installedDependencyRoots() = %v, want %v", got, want)
+			}
+		})
+	}
+}
+
+func TestInstalledDependencyRoots_ResourceWithoutSourcePackage(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/dependencies/.resources/plugin-abc123/plugin.inc", nil)
+
+	got := installedDependencyRoots(m, source.NewRegistry(), "/proj", nil)
+	want := []string{"/proj/dependencies/.resources/plugin-abc123"}
+	if !slices.Equal(got, want) {
+		t.Fatalf("installedDependencyRoots() = %v, want %v", got, want)
 	}
 }
 

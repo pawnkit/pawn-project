@@ -3,7 +3,9 @@ package project
 
 import (
 	"fmt"
+	"io/fs"
 	"slices"
+	"strings"
 
 	"github.com/pawnkit/pawnkit-core/diagnostic"
 	"github.com/pawnkit/pawnkit-core/source"
@@ -68,7 +70,7 @@ func Load(reg *source.Registry, fsys fsx.FS, start string, opts Options) (*Proje
 		return nil, fmt.Errorf("project: resolving paths: %w", err)
 	}
 	resolved.IncludeRoots, err = projectIncludeRoots(
-		fsys, reg, root.Dir, resolved.Entry, selection, resolved.IncludeRoots, opts.ManagedIncludeRoots,
+		fsys, reg, root.Dir, resolved.Entry, selection, resolved.IncludeRoots, m.Dependencies, opts.ManagedIncludeRoots,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("project: resolving includes: %w", err)
@@ -112,6 +114,7 @@ func projectIncludeRoots(
 	entry string,
 	selection profile.Selection,
 	declared []string,
+	dependencies []manifest.Dependency,
 	managed []string,
 ) ([]string, error) {
 	var roots []string
@@ -131,7 +134,7 @@ func projectIncludeRoots(
 	for _, path := range declared {
 		roots = appendUnique(roots, path)
 	}
-	for _, path := range installedDependencyRoots(fsys, reg, root) {
+	for _, path := range installedDependencyRoots(fsys, reg, root, dependencies) {
 		roots = appendUnique(roots, path)
 	}
 	for _, path := range managed {
@@ -143,33 +146,90 @@ func projectIncludeRoots(
 	return roots, nil
 }
 
-func installedDependencyRoots(fsys fsx.FS, reg *source.Registry, root string) []string {
+func installedDependencyRoots(
+	fsys fsx.FS,
+	reg *source.Registry,
+	root string,
+	dependencies []manifest.Dependency,
+) []string {
 	directory := pathutil.Join(root, "dependencies")
 	entries, err := fsys.ReadDir(directory)
 	if err != nil {
 		return nil
 	}
-	var roots []string
+	resourceRoots, resourceOrder := installedResourceRoots(fsys, directory, entries)
+	packageRoots := make(map[string][]string)
 	for _, entry := range entries {
-		if !entry.IsDir() {
+		if !entry.IsDir() || entry.Name() == ".resources" {
+			continue
+		}
+		if resource := resourceRoots[entry.Name()]; resource != "" {
+			packageRoots[entry.Name()] = []string{resource}
+			delete(resourceRoots, entry.Name())
 			continue
 		}
 		path := pathutil.Join(directory, entry.Name())
-		if entry.Name() == ".resources" {
-			resources, readErr := fsys.ReadDir(path)
-			if readErr != nil {
-				continue
-			}
-			for _, resource := range resources {
-				if resource.IsDir() {
-					roots = appendUnique(roots, pathutil.Join(path, resource.Name()))
-				}
-			}
-			continue
+		packageRoots[entry.Name()] = dependencyPackageRoots(fsys, reg, path)
+	}
+	var roots []string
+	for _, dependency := range dependencies {
+		for _, path := range packageRoots[dependency.Repo] {
+			roots = appendUnique(roots, path)
 		}
-		roots = append(roots, dependencyPackageRoots(fsys, reg, path)...)
+		delete(packageRoots, dependency.Repo)
+	}
+	for _, entry := range entries {
+		for _, path := range packageRoots[entry.Name()] {
+			roots = appendUnique(roots, path)
+		}
+	}
+	for _, packageName := range resourceOrder {
+		if resource := resourceRoots[packageName]; resource != "" {
+			roots = appendUnique(roots, resource)
+		}
 	}
 	return roots
+}
+
+func installedResourceRoots(
+	fsys fsx.FS,
+	directory string,
+	entries []fs.DirEntry,
+) (map[string]string, []string) {
+	roots := make(map[string]string)
+	var order []string
+	for _, entry := range entries {
+		if !entry.IsDir() || entry.Name() != ".resources" {
+			continue
+		}
+		path := pathutil.Join(directory, ".resources")
+		resources, err := fsys.ReadDir(path)
+		if err != nil {
+			break
+		}
+		for _, resource := range resources {
+			if packageName, ok := extractedResourcePackage(resource.Name()); resource.IsDir() && ok {
+				roots[packageName] = pathutil.Join(path, resource.Name())
+				order = append(order, packageName)
+			}
+		}
+		break
+	}
+	return roots, order
+}
+
+func extractedResourcePackage(name string) (string, bool) {
+	separator := strings.LastIndexByte(name, '-')
+	if separator < 1 {
+		return "", false
+	}
+	packageName, suffix := name[:separator], name[separator+1:]
+	if len(suffix) < 6 || strings.IndexFunc(suffix, func(r rune) bool {
+		return !strings.ContainsRune("0123456789abcdefABCDEF", r)
+	}) != -1 {
+		return "", false
+	}
+	return packageName, true
 }
 
 func dependencyPackageRoots(fsys fsx.FS, reg *source.Registry, root string) []string {

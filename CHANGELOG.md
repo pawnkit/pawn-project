@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.3 - 2026-07-30
+
+### Fixed
+
+- Prefer direct dependencies and extracted sampctl resources when resolving includes.
+
 ## 0.3.2 - 2026-07-28
 
 ### Performance
