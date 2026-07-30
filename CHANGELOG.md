@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.1 - 2026-07-30
+
+### Fixed
+
+- Treat a version-only sampctl compiler setting as pawn-lang.
+
 ## 0.6.0 - 2026-07-30
 
 ### Fixed

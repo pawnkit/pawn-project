@@ -310,7 +310,7 @@ func (p *Project) CompilerCoordinate() (toolchain.Coordinate, bool) {
 		switch p.selection.ProfileID {
 		case profile.ProfileOpenMP:
 			vendor, ok = toolchain.VendorOpenMultiplayer, true
-		case profile.ProfileSAMP037, profile.ProfileLegacy:
+		case "", profile.ProfileSAMP037, profile.ProfileLegacy:
 			vendor, ok = toolchain.VendorPawnLang, true
 		}
 	}

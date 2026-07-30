@@ -101,6 +101,23 @@ func TestLoad_ResolvesNestedSampctlPathsWithinWorkspace(t *testing.T) {
 	}
 }
 
+func TestCompilerCoordinateDefaultsToPawnLang(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/project/pawn.yaml", []byte(
+		"entry: main.pwn\nbuild:\n  compiler:\n    version: 3.10.8\n",
+	))
+	m.AddFile("/project/main.pwn", []byte("main() {}\n"))
+
+	project, err := Load(source.NewRegistry(), m, "/project", Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	coordinate, ok := project.CompilerCoordinate()
+	if !ok || coordinate.Vendor != "pawn-lang" || coordinate.Version != "3.10.8" {
+		t.Fatalf("compiler coordinate = %+v, %v", coordinate, ok)
+	}
+}
+
 func TestLoad_QuotedIncludesUseEntryDirectory(t *testing.T) {
 	m := fsx.NewMem()
 	m.AddFile("/proj/pawn.json", []byte(`{"entry":"gamemodes/gamemode.pwn"}`))
