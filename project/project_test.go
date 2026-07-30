@@ -355,11 +355,63 @@ func TestLoad_ExposesBuildContract(t *testing.T) {
 	if build.Compiler == nil || build.Compiler.Version != "3.10.10" {
 		t.Fatalf("compiler = %+v", build.Compiler)
 	}
+	coordinate, ok := p.CompilerCoordinate()
+	if !ok || coordinate.Vendor != "pawn-lang" || coordinate.Version != "3.10.10" {
+		t.Fatalf("compiler coordinate = %+v, %v", coordinate, ok)
+	}
 	if len(p.Manifest().Dependencies) != 1 {
 		t.Fatalf("dependencies = %+v", p.Manifest().Dependencies)
 	}
 	if !slices.Contains(p.Paths().GeneratedFiles, "/proj/sampctl_build_file.inc") {
 		t.Fatalf("generated files = %v", p.Paths().GeneratedFiles)
+	}
+}
+
+func TestCompilerCoordinatePrefersLockfile(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/pawn.json", []byte(`{
+		"entry":"main.pwn",
+		"preset":"samp",
+		"build":{"compiler":{"user":"pawn-lang","repo":"compiler","version":"3.10.10"}}
+	}`))
+	m.AddFile("/proj/pawn.lock", []byte(`{
+		"schemaVersion":1,
+		"compiler":{
+			"vendor":"openmultiplayer",
+			"version":"3.10.11",
+			"checksum":"sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+		},
+		"packages":[]
+	}`))
+	m.AddFile("/proj/main.pwn", nil)
+
+	p, err := Load(source.NewRegistry(), m, "/proj", Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	coordinate, ok := p.CompilerCoordinate()
+	if !ok || coordinate.Vendor != "openmultiplayer" || coordinate.Version != "3.10.11" ||
+		coordinate.ExpectedChecksum == "" {
+		t.Fatalf("compiler coordinate = %+v, %v", coordinate, ok)
+	}
+}
+
+func TestCompilerCoordinateUsesProfileForUnknownRepository(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/pawn.json", []byte(`{
+		"entry":"main.pwn",
+		"preset":"openmp",
+		"build":{"compiler":{"user":"community","repo":"compiler","version":"3.10.11"}}
+	}`))
+	m.AddFile("/proj/main.pwn", nil)
+
+	p, err := Load(source.NewRegistry(), m, "/proj", Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	coordinate, ok := p.CompilerCoordinate()
+	if !ok || coordinate.Vendor != "openmultiplayer" || coordinate.Version != "3.10.11" {
+		t.Fatalf("compiler coordinate = %+v, %v", coordinate, ok)
 	}
 }
 

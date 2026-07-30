@@ -18,6 +18,7 @@ import (
 	"github.com/pawnkit/pawn-project/paths"
 	"github.com/pawnkit/pawn-project/pathutil"
 	"github.com/pawnkit/pawn-project/profile"
+	"github.com/pawnkit/pawn-project/toolchain"
 	"github.com/pawnkit/pawn-project/workspace"
 )
 
@@ -281,11 +282,56 @@ func appendUnique(items []string, value string) []string {
 	return append(items, value)
 }
 
-func (p *Project) Root() string                       { return p.root }
-func (p *Project) Workspace() workspace.Root          { return p.workspace }
-func (p *Project) Manifest() *manifest.Manifest       { return p.manifest }
-func (p *Project) Lockfile() *lockfile.Lock           { return p.lock }
-func (p *Project) Selection() profile.Selection       { return p.selection }
+func (p *Project) Root() string                 { return p.root }
+func (p *Project) Workspace() workspace.Root    { return p.workspace }
+func (p *Project) Manifest() *manifest.Manifest { return p.manifest }
+func (p *Project) Lockfile() *lockfile.Lock     { return p.lock }
+func (p *Project) Selection() profile.Selection { return p.selection }
+
+// CompilerCoordinate returns the compiler pinned by the lockfile or build.
+func (p *Project) CompilerCoordinate() (toolchain.Coordinate, bool) {
+	if p.lock != nil && p.lock.Compiler != nil && p.lock.Compiler.Version != "" {
+		vendor, ok := compilerVendor(p.lock.Compiler.Vendor)
+		if ok {
+			return toolchain.Coordinate{
+				Vendor:           vendor,
+				Version:          p.lock.Compiler.Version,
+				ExpectedChecksum: p.lock.Compiler.Checksum,
+			}, true
+		}
+	}
+	if p.selection.Build == nil || p.selection.Build.Compiler == nil ||
+		p.selection.Build.Compiler.Version == "" {
+		return toolchain.Coordinate{}, false
+	}
+	ref := p.selection.Build.Compiler
+	vendor, ok := compilerVendor(ref.User)
+	if !ok {
+		switch p.selection.ProfileID {
+		case profile.ProfileOpenMP:
+			vendor, ok = toolchain.VendorOpenMultiplayer, true
+		case profile.ProfileSAMP037, profile.ProfileLegacy:
+			vendor, ok = toolchain.VendorPawnLang, true
+		}
+	}
+	if !ok {
+		return toolchain.Coordinate{}, false
+	}
+	return toolchain.Coordinate{Vendor: vendor, Version: ref.Version}, true
+}
+
+func compilerVendor(value string) (toolchain.Vendor, bool) {
+	switch strings.ToLower(value) {
+	case "pawn-lang", "sampctl":
+		return toolchain.VendorPawnLang, true
+	case "openmultiplayer":
+		return toolchain.VendorOpenMultiplayer, true
+	case "original-pawn":
+		return toolchain.VendorOriginalPawn, true
+	default:
+		return "", false
+	}
+}
 func (p *Project) Paths() paths.Resolved              { return p.resolved }
 func (p *Project) IncludeResolver() *include.Resolver { return p.includes }
 

@@ -33,6 +33,13 @@ type Info struct {
 	ArtifactChecksum string // checksum of the downloaded artifact
 }
 
+// Coordinate identifies one pinned compiler.
+type Coordinate struct {
+	Vendor           Vendor
+	Version          string
+	ExpectedChecksum string
+}
+
 // Platform identifies a target platform for a downloadable artifact.
 type Platform struct {
 	OS   string // "linux", "windows", "darwin"

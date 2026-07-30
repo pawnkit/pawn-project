@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.11 - 2026-07-30
+
+### Added
+
+- Expose the compiler coordinate pinned by the lockfile or active build.
+
 ## 0.3.10 - 2026-07-30
 
 ### Fixed
