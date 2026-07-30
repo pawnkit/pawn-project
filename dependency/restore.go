@@ -28,9 +28,9 @@ const (
 
 // Result describes one restored dependency.
 type Result struct {
-	Name   string
-	Path   string
-	Status Status
+	Name   string `json:"name"`
+	Path   string `json:"path"`
+	Status Status `json:"status"`
 }
 
 // Installer installs a locked source at target.

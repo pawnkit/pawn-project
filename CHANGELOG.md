@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.6 - 2026-07-30
+
+### Fixed
+
+- Use stable lower-case field names when dependency results are encoded as JSON.
+
 ## 0.3.5 - 2026-07-30
 
 ### Added
