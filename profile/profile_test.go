@@ -122,6 +122,68 @@ func TestSelect_NamedBuild(t *testing.T) {
 	}
 }
 
+func TestSelect_DefaultBuildPrecedesNamedBuilds(t *testing.T) {
+	base := &manifest.Build{
+		Args:     []string{"-d3"},
+		Includes: []string{"../include"},
+		Compiler: &manifest.CompilerRef{Version: "3.10.8"},
+	}
+	m := &manifest.Manifest{
+		Build:  base,
+		Builds: []manifest.Build{{Name: "dev", Constants: map[string]any{"DEVELOPMENT": "1"}}},
+	}
+
+	sel, err := Select(m, Options{})
+	if err != nil {
+		t.Fatalf("Select: %v", err)
+	}
+	if sel.Build != base {
+		t.Fatalf("Build = %+v, want top-level build", sel.Build)
+	}
+}
+
+func TestSelect_NamedBuildInheritsDefaults(t *testing.T) {
+	m := &manifest.Manifest{
+		Build: &manifest.Build{
+			Args:      []string{"-d3"},
+			Includes:  []string{"../legacy/includes", "../src/modules"},
+			Compiler:  &manifest.CompilerRef{User: "pawn-lang", Repo: "compiler", Version: "3.10.8"},
+			Input:     "../src/main.pwn",
+			Output:    "gamemodes/main.amx",
+			Constants: map[string]any{"BASE": "1", "MODE": "release"},
+		},
+		Builds: []manifest.Build{{
+			Name:      "dev",
+			Compiler:  &manifest.CompilerRef{Version: "3.10.10"},
+			Constants: map[string]any{"DEVELOPMENT": "1", "MODE": "debug"},
+		}},
+	}
+
+	sel, err := Select(m, Options{BuildName: "dev"})
+	if err != nil {
+		t.Fatalf("Select: %v", err)
+	}
+
+	if sel.Build.Name != "dev" ||
+		sel.Build.Compiler.User != "pawn-lang" ||
+		sel.Build.Compiler.Repo != "compiler" ||
+		sel.Build.Compiler.Version != "3.10.10" ||
+		len(sel.Build.Args) != 1 ||
+		len(sel.Build.Includes) != 2 ||
+		sel.Build.Input != "../src/main.pwn" ||
+		sel.Build.Output != "gamemodes/main.amx" ||
+		sel.Build.Constants["BASE"] != "1" ||
+		sel.Build.Constants["MODE"] != "debug" {
+		t.Fatalf("Build = %+v", sel.Build)
+	}
+
+	sel.Build.Args[0] = "-O2"
+	sel.Build.Constants["BASE"] = "changed"
+	if m.Build.Args[0] != "-d3" || m.Build.Constants["BASE"] != "1" {
+		t.Fatal("selection mutated build defaults")
+	}
+}
+
 func TestSelect_UnknownBuildName(t *testing.T) {
 	m := &manifest.Manifest{Builds: []manifest.Build{{Name: "debug"}}}
 

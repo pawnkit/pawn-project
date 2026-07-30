@@ -47,7 +47,8 @@ func main() {
 
 The loader accepts a project directory or a file inside one. It returns diagnostics for project problems instead of failing at the first bad field. Environment failures, such as an unreadable manifest, are returned as errors.
 Nested sampctl manifests may reference entry and output files in a containing
-Pawn workspace. Include paths remain relative to the selected manifest.
+Pawn workspace. Their build include paths may do the same, but PawnKit-specific
+include paths remain inside the selected manifest.
 
 Use `IncludeResolver().Complete` when an editor needs include-path candidates.
 The result follows the same root order and path rules as include resolution.

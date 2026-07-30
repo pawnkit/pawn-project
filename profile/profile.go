@@ -4,6 +4,7 @@ package profile
 import (
 	"errors"
 	"fmt"
+	"maps"
 
 	"github.com/pawnkit/pawn-project/manifest"
 )
@@ -97,21 +98,111 @@ func resolveProfileID(m *manifest.Manifest, opts Options) string {
 }
 
 func selectBuild(m *manifest.Manifest, name string) (*manifest.Build, error) {
-	if len(m.Builds) > 0 {
-		if name == "" {
-			return &m.Builds[0], nil
-		}
-
-		for i := range m.Builds {
-			if m.Builds[i].Name == name {
-				return &m.Builds[i], nil
-			}
-		}
-
-		return nil, fmt.Errorf("%w: %q", ErrBuildNotFound, name)
+	if name == "" && m.Build != nil {
+		return m.Build, nil
 	}
 
-	return m.Build, nil
+	var selected *manifest.Build
+	if name == "" && len(m.Builds) > 0 {
+		selected = &m.Builds[0]
+	} else {
+		for i := range m.Builds {
+			if m.Builds[i].Name == name {
+				selected = &m.Builds[i]
+				break
+			}
+		}
+	}
+
+	if selected == nil {
+		if name != "" {
+			return nil, fmt.Errorf("%w: %q", ErrBuildNotFound, name)
+		}
+
+		return nil, nil
+	}
+
+	return mergeBuild(selected, m.Build), nil
+}
+
+func mergeBuild(build, defaults *manifest.Build) *manifest.Build {
+	merged := cloneBuild(build)
+	if defaults == nil {
+		return merged
+	}
+
+	if len(merged.Args) == 0 {
+		merged.Args = append([]string(nil), defaults.Args...)
+	}
+	if merged.Input == "" {
+		merged.Input = defaults.Input
+	}
+	if merged.Output == "" {
+		merged.Output = defaults.Output
+	}
+	if len(merged.Includes) == 0 {
+		merged.Includes = append([]string(nil), defaults.Includes...)
+	}
+	mergeCompiler(merged, defaults)
+
+	if merged.Constants == nil && defaults.Constants != nil {
+		merged.Constants = make(map[string]any, len(defaults.Constants))
+	}
+	for key, value := range defaults.Constants {
+		if _, ok := merged.Constants[key]; !ok {
+			merged.Constants[key] = value
+		}
+	}
+
+	return merged
+}
+
+func mergeCompiler(build, defaults *manifest.Build) {
+	if build.Compiler == nil {
+		build.Compiler = cloneCompiler(defaults.Compiler)
+		return
+	}
+	if defaults.Compiler == nil {
+		return
+	}
+	if build.Compiler.Site == "" {
+		build.Compiler.Site = defaults.Compiler.Site
+	}
+	if build.Compiler.User == "" {
+		build.Compiler.User = defaults.Compiler.User
+	}
+	if build.Compiler.Repo == "" {
+		build.Compiler.Repo = defaults.Compiler.Repo
+	}
+	if build.Compiler.Version == "" {
+		build.Compiler.Version = defaults.Compiler.Version
+	}
+}
+
+func cloneBuild(build *manifest.Build) *manifest.Build {
+	if build == nil {
+		return nil
+	}
+
+	clone := *build
+	clone.Args = append([]string(nil), build.Args...)
+	clone.Includes = append([]string(nil), build.Includes...)
+	clone.Compiler = cloneCompiler(build.Compiler)
+	if build.Constants != nil {
+		clone.Constants = make(map[string]any, len(build.Constants))
+		maps.Copy(clone.Constants, build.Constants)
+	}
+
+	return &clone
+}
+
+func cloneCompiler(compiler *manifest.CompilerRef) *manifest.CompilerRef {
+	if compiler == nil {
+		return nil
+	}
+
+	clone := *compiler
+	return &clone
 }
 
 func selectRuntime(m *manifest.Manifest, name string) (*manifest.Runtime, error) {

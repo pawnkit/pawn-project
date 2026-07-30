@@ -86,9 +86,10 @@ func TestLoad_ResolvesNestedSampctlPathsWithinWorkspace(t *testing.T) {
 	m := fsx.NewMem()
 	m.AddFile("/repo/pawn.json", []byte(`{"entry":"src/main.pwn"}`))
 	m.AddFile("/repo/server/pawn.yaml", []byte(
-		"entry: ../src/main.pwn\noutput: gamemodes/main.amx\n",
+		"entry: ../src/main.pwn\noutput: gamemodes/main.amx\nbuild:\n  includes:\n    - ../legacy/includes\n",
 	))
 	m.AddFile("/repo/src/main.pwn", []byte("main() {}\n"))
+	m.AddFile("/repo/legacy/includes/shared.inc", nil)
 
 	project, err := Load(source.NewRegistry(), m, "/repo/server", Options{})
 	if err != nil {
@@ -98,6 +99,22 @@ func TestLoad_ResolvesNestedSampctlPathsWithinWorkspace(t *testing.T) {
 		project.Paths().Entry != "/repo/src/main.pwn" ||
 		project.Paths().Output != "/repo/server/gamemodes/main.amx" {
 		t.Fatalf("project paths = %+v", project.Paths())
+	}
+	if !slices.Contains(project.Paths().IncludeRoots, "/repo/legacy/includes") {
+		t.Fatalf("include roots = %v", project.Paths().IncludeRoots)
+	}
+}
+
+func TestLoad_RejectsBuildIncludeOutsideWorkspace(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/repo/pawn.json", []byte(`{"entry":"src/main.pwn"}`))
+	m.AddFile("/repo/server/pawn.yaml", []byte(
+		"entry: ../src/main.pwn\nbuild:\n  includes:\n    - ../../outside\n",
+	))
+	m.AddFile("/repo/src/main.pwn", nil)
+
+	if _, err := Load(source.NewRegistry(), m, "/repo/server", Options{}); err == nil {
+		t.Fatal("workspace escape accepted")
 	}
 }
 

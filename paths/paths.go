@@ -42,7 +42,7 @@ func ResolveWithin(root, boundary string, m *manifest.Manifest) (Resolved, error
 	r := Resolved{Root: root}
 
 	if m.Entry != "" {
-		p, err := joinWithin(root, boundary, m.Entry)
+		p, err := JoinWithin(root, boundary, m.Entry)
 		if err != nil {
 			return Resolved{}, err
 		}
@@ -51,7 +51,7 @@ func ResolveWithin(root, boundary string, m *manifest.Manifest) (Resolved, error
 	}
 
 	if m.Output != "" {
-		p, err := joinWithin(root, boundary, m.Output)
+		p, err := JoinWithin(root, boundary, m.Output)
 		if err != nil {
 			return Resolved{}, err
 		}
@@ -81,7 +81,8 @@ func ResolveWithin(root, boundary string, m *manifest.Manifest) (Resolved, error
 	return r, nil
 }
 
-func joinWithin(root, boundary, relative string) (string, error) {
+// JoinWithin resolves a relative path while keeping it inside boundary.
+func JoinWithin(root, boundary, relative string) (string, error) {
 	if pathutil.IsAbs(relative) {
 		return "", fmt.Errorf("%w: %q is absolute, want relative", pathutil.ErrTraversal, relative)
 	}

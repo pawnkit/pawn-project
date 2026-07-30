@@ -66,12 +66,13 @@ func Load(reg *source.Registry, fsys fsx.FS, start string, opts Options) (*Proje
 		return nil, fmt.Errorf("project: %w", err)
 	}
 
-	resolved, err := paths.ResolveWithin(root.Dir, workspace.Boundary(fsys, root), m)
+	boundary := workspace.Boundary(fsys, root)
+	resolved, err := paths.ResolveWithin(root.Dir, boundary, m)
 	if err != nil {
 		return nil, fmt.Errorf("project: resolving paths: %w", err)
 	}
 	resolved.IncludeRoots, err = projectIncludeRoots(
-		fsys, reg, root.Dir, resolved.Entry, selection, resolved.IncludeRoots, m.Dependencies, opts.ManagedIncludeRoots,
+		fsys, reg, root.Dir, boundary, resolved.Entry, selection, resolved.IncludeRoots, m.Dependencies, opts.ManagedIncludeRoots,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("project: resolving includes: %w", err)
@@ -112,6 +113,7 @@ func projectIncludeRoots(
 	fsys fsx.FS,
 	reg *source.Registry,
 	root string,
+	boundary string,
 	entry string,
 	selection profile.Selection,
 	declared []string,
@@ -121,7 +123,7 @@ func projectIncludeRoots(
 	var roots []string
 	if selection.Build != nil {
 		for _, rel := range selection.Build.Includes {
-			path, err := pathutil.SafeJoin(root, rel)
+			path, err := paths.JoinWithin(root, boundary, rel)
 			if err != nil {
 				return nil, err
 			}

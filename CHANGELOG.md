@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.2 - 2026-07-30
+
+### Fixed
+
+- Select and merge sampctl build configurations using sampctl's precedence.
+- Resolve sampctl build include paths inside a containing Pawn workspace.
+
 ## 0.6.1 - 2026-07-30
 
 ### Fixed
