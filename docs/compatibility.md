@@ -59,6 +59,7 @@ yet part of RFC 0003.
 | Resolve explicit local compiler first when configured | Implemented |
 | Resolve a pinned/downloaded compiler matching the profile | Implemented with verified cache lookup and an explicit artifact URL |
 | Select the compiler pinned by the lockfile or active build | Implemented through `Project.CompilerCoordinate` |
+| Read a reviewed compiler artifact index | Implemented for RFC 0019 schema version 1 |
 | Store in OS-appropriate cache directory | `toolchain.DefaultCacheDir()` implemented (thin `os.UserCacheDir()` wrapper); resolution logic itself takes any directory, so tests use `t.TempDir()` |
 | Verify checksums when published | Implemented (`hash.Content` comparison against `ExpectedChecksum`, both for local paths and downloaded artifacts) |
 | Allow offline mode | Implemented (`ResolveOptions.Offline`); `Resolve` returns `ErrOffline` rather than attempting a download |

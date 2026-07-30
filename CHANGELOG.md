@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0 - 2026-07-30
+
+### Added
+
+- Read checksum-pinned RFC 0019 compiler indexes and select exact targets.
+
 ## 0.3.11 - 2026-07-30
 
 ### Added

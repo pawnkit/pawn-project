@@ -10,7 +10,10 @@ import (
 	"time"
 )
 
-const defaultHTTPTimeout = 30 * time.Second
+const (
+	defaultHTTPTimeout = 30 * time.Second
+	httpsScheme        = "https"
+)
 
 // HTTPDownloader fetches HTTPS artifacts with an injected client.
 type HTTPDownloader struct {
@@ -19,7 +22,7 @@ type HTTPDownloader struct {
 
 func (d HTTPDownloader) Download(ctx context.Context, rawURL string) (io.ReadCloser, error) {
 	parsed, err := url.Parse(rawURL)
-	if err != nil || parsed.Scheme != "https" || parsed.Host == "" || parsed.User != nil {
+	if err != nil || parsed.Scheme != httpsScheme || parsed.Host == "" || parsed.User != nil {
 		return nil, fmt.Errorf("toolchain: invalid HTTPS download URL %q", rawURL)
 	}
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
@@ -33,7 +36,7 @@ func (d HTTPDownloader) Download(ctx context.Context, rawURL string) (io.ReadClo
 	clientCopy := *client
 	originalRedirect := client.CheckRedirect
 	clientCopy.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-		if req.URL.Scheme != "https" || req.URL.Host == "" || req.URL.User != nil {
+		if req.URL.Scheme != httpsScheme || req.URL.Host == "" || req.URL.User != nil {
 			return fmt.Errorf("toolchain: redirect to invalid HTTPS URL %q", req.URL)
 		}
 		if originalRedirect != nil {
@@ -52,7 +55,7 @@ func (d HTTPDownloader) Download(ctx context.Context, rawURL string) (io.ReadClo
 		_ = response.Body.Close()
 		return nil, fmt.Errorf("toolchain: download returned %s", response.Status)
 	}
-	if response.Request != nil && (response.Request.URL == nil || response.Request.URL.Scheme != "https" || response.Request.URL.Host == "") {
+	if response.Request != nil && (response.Request.URL == nil || response.Request.URL.Scheme != httpsScheme || response.Request.URL.Host == "") {
 		_ = response.Body.Close()
 		return nil, errors.New("toolchain: download ended at an invalid HTTPS URL")
 	}
