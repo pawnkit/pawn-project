@@ -82,6 +82,25 @@ func TestLoad_FullyResolvedProject(t *testing.T) {
 	}
 }
 
+func TestLoad_ResolvesNestedSampctlPathsWithinWorkspace(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/repo/pawn.json", []byte(`{"entry":"src/main.pwn"}`))
+	m.AddFile("/repo/server/pawn.yaml", []byte(
+		"entry: ../src/main.pwn\noutput: gamemodes/main.amx\n",
+	))
+	m.AddFile("/repo/src/main.pwn", []byte("main() {}\n"))
+
+	project, err := Load(source.NewRegistry(), m, "/repo/server", Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if project.Root() != "/repo/server" ||
+		project.Paths().Entry != "/repo/src/main.pwn" ||
+		project.Paths().Output != "/repo/server/gamemodes/main.amx" {
+		t.Fatalf("project paths = %+v", project.Paths())
+	}
+}
+
 func TestLoad_QuotedIncludesUseEntryDirectory(t *testing.T) {
 	m := fsx.NewMem()
 	m.AddFile("/proj/pawn.json", []byte(`{"entry":"gamemodes/gamemode.pwn"}`))

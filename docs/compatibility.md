@@ -6,8 +6,8 @@ This table tracks sampctl fields formalized by PawnKit RFC 0002. "Supported" mea
 
 | Field | Supported | Notes |
 |---|---|---|
-| `entry` | Yes | minLength:1 enforced (`CodeEmptyEntry`) |
-| `output` | Yes | minLength:1 enforced (`CodeEmptyOutput`) |
+| `entry` | Yes | May resolve into a containing Pawn workspace, matching nested sampctl projects |
+| `output` | Yes | May resolve into a containing Pawn workspace; paths outside it are rejected |
 | `user` / `repo` | Yes | decoded, not otherwise interpreted |
 | `dependencies` / `dev_dependencies` | Yes | parsed into structured `Dependency` (scheme, user, repo, ref kind/value); invalid entries reported per-entry, valid entries in the same array still parse |
 | `preset` (`samp`/`openmp`) | Yes | validated against the enum; mapped to `samp-037`/`openmp` RFC 0001 profile IDs by `profile.Select` when no explicit override |

@@ -92,3 +92,17 @@ func TestFindRoot_RequiresAbsolute(t *testing.T) {
 		t.Fatal("expected error for relative start path")
 	}
 }
+
+func TestBoundaryUsesOutermostPawnWorkspace(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/repo/pawn.json", []byte(`{}`))
+	m.AddFile("/repo/server/pawn.yaml", []byte("entry: ../src/main.pwn\n"))
+
+	root, err := FindRoot(m, "/repo/server")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := Boundary(m, root); got != "/repo" {
+		t.Fatalf("Boundary() = %q, want /repo", got)
+	}
+}

@@ -66,6 +66,35 @@ func TestResolve_TraversalRejected(t *testing.T) {
 	}
 }
 
+func TestResolveWithin_AllowsWorkspaceEntryAndOutput(t *testing.T) {
+	m := &manifest.Manifest{
+		Entry:  "../src/main.pwn",
+		Output: "../server/gamemodes/main.amx",
+	}
+	resolved, err := ResolveWithin("/repo/server", "/repo", m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resolved.Entry != "/repo/src/main.pwn" ||
+		resolved.Output != "/repo/server/gamemodes/main.amx" {
+		t.Fatalf("resolved = %+v", resolved)
+	}
+}
+
+func TestResolveWithin_RejectsWorkspaceEscape(t *testing.T) {
+	m := &manifest.Manifest{Entry: "../../outside.pwn"}
+	if _, err := ResolveWithin("/repo/server", "/repo", m); err == nil {
+		t.Fatal("workspace escape accepted")
+	}
+}
+
+func TestResolveWithin_StillRejectsEscapingIncludes(t *testing.T) {
+	m := &manifest.Manifest{IncludePath: "../include"}
+	if _, err := ResolveWithin("/repo/server", "/repo", m); err == nil {
+		t.Fatal("escaping include accepted")
+	}
+}
+
 func TestResolve_WindowsStyleRelativePaths(t *testing.T) {
 	m := &manifest.Manifest{Entry: `gamemodes\main.pwn`, IncludePath: `vendor\include`}
 

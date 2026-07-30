@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0 - 2026-07-30
+
+### Fixed
+
+- Resolve sampctl entry and output paths inside a containing Pawn workspace.
+- Keep include paths bounded to the manifest directory.
+
 ## 0.5.0 - 2026-07-30
 
 ### Added

@@ -60,3 +60,17 @@ func FindRoot(fsys fsx.FS, start string) (Root, error) {
 		dir = parent
 	}
 }
+
+// Boundary returns the outermost ancestor containing a Pawn manifest.
+func Boundary(fsys fsx.FS, root Root) string {
+	boundary := root.Dir
+	for dir := pathutil.Dir(root.Dir); dir != pathutil.Dir(dir); dir = pathutil.Dir(dir) {
+		for _, name := range manifestNames {
+			if fsx.IsFile(fsys, pathutil.Join(dir, name)) {
+				boundary = dir
+				break
+			}
+		}
+	}
+	return boundary
+}

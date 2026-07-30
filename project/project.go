@@ -66,7 +66,7 @@ func Load(reg *source.Registry, fsys fsx.FS, start string, opts Options) (*Proje
 		return nil, fmt.Errorf("project: %w", err)
 	}
 
-	resolved, err := paths.Resolve(root.Dir, m)
+	resolved, err := paths.ResolveWithin(root.Dir, workspace.Boundary(fsys, root), m)
 	if err != nil {
 		return nil, fmt.Errorf("project: resolving paths: %w", err)
 	}

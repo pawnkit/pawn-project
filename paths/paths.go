@@ -2,6 +2,9 @@
 package paths
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/pawnkit/pawn-project/manifest"
 	"github.com/pawnkit/pawn-project/pathutil"
 )
@@ -28,12 +31,18 @@ type Resolved struct {
 // Resolve computes Resolved for m rooted at root, which must already be an
 // absolute path (typically workspace.Root.Dir).
 func Resolve(root string, m *manifest.Manifest) (Resolved, error) {
+	return ResolveWithin(root, root, m)
+}
+
+// ResolveWithin allows entry and output paths inside boundary.
+func ResolveWithin(root, boundary string, m *manifest.Manifest) (Resolved, error) {
 	root = pathutil.Clean(root)
+	boundary = pathutil.Clean(boundary)
 
 	r := Resolved{Root: root}
 
 	if m.Entry != "" {
-		p, err := pathutil.SafeJoin(root, m.Entry)
+		p, err := joinWithin(root, boundary, m.Entry)
 		if err != nil {
 			return Resolved{}, err
 		}
@@ -42,7 +51,7 @@ func Resolve(root string, m *manifest.Manifest) (Resolved, error) {
 	}
 
 	if m.Output != "" {
-		p, err := pathutil.SafeJoin(root, m.Output)
+		p, err := joinWithin(root, boundary, m.Output)
 		if err != nil {
 			return Resolved{}, err
 		}
@@ -70,4 +79,17 @@ func Resolve(root string, m *manifest.Manifest) (Resolved, error) {
 	}
 
 	return r, nil
+}
+
+func joinWithin(root, boundary, relative string) (string, error) {
+	if pathutil.IsAbs(relative) {
+		return "", fmt.Errorf("%w: %q is absolute, want relative", pathutil.ErrTraversal, relative)
+	}
+	candidate := pathutil.Join(root, relative)
+	foldedBoundary := strings.ToLower(boundary)
+	foldedCandidate := strings.ToLower(candidate)
+	if foldedCandidate != foldedBoundary && !strings.HasPrefix(foldedCandidate, foldedBoundary+"/") {
+		return "", fmt.Errorf("%w: %q", pathutil.ErrTraversal, relative)
+	}
+	return candidate, nil
 }
