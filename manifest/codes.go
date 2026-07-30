@@ -16,6 +16,7 @@ const (
 	CodePathTraversal        = "pawn-project:manifest-path-traversal"
 	CodeMissingBuildName     = "pawn-project:manifest-missing-build-name"
 	CodeMissingRuntimeName   = "pawn-project:manifest-missing-runtime-name"
+	CodeMissingResourceField = "pawn-project:manifest-missing-resource-field"
 )
 
 // Source is the diagnostic.Source value used for every diagnostic this

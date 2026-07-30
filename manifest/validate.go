@@ -35,6 +35,34 @@ func (v *validator) run() {
 	v.checkIncludePathTraversal()
 	v.checkBuilds()
 	v.checkRuntimes()
+	v.checkResources()
+}
+
+func (v *validator) checkResources() {
+	for index, resource := range v.m.Resources {
+		if resource.Name == "" {
+			v.add(CodeMissingResourceField, diagnostic.SeverityError,
+				"resources[%d] is missing required field %q", index, "name")
+		}
+		if resource.Platform == "" {
+			v.add(CodeMissingResourceField, diagnostic.SeverityError,
+				"resources[%d] is missing required field %q", index, "platform")
+		}
+		for _, path := range append(append([]string(nil), resource.Includes...), resource.Plugins...) {
+			v.checkResourcePath(index, path)
+		}
+		for source, destination := range resource.Files {
+			v.checkResourcePath(index, source)
+			v.checkResourcePath(index, destination)
+		}
+	}
+}
+
+func (v *validator) checkResourcePath(index int, path string) {
+	if path == "" || pathutil.IsAbs(path) || pathutil.HasTraversal(path) {
+		v.add(CodePathTraversal, diagnostic.SeverityError,
+			"resources[%d] path %q must be relative and must not escape its root", index, path)
+	}
 }
 
 func (v *validator) checkPreset() {

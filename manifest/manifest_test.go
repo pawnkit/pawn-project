@@ -44,6 +44,12 @@ func TestLoad_PawnKitSpecExample(t *testing.T) {
 		t.Fatalf("Dependencies = %d, want 3", len(res.Manifest.Dependencies))
 	}
 
+	if len(res.Manifest.Resources) != 1 ||
+		res.Manifest.Resources[0].Name != "streamer-*-linux.tar.gz" ||
+		len(res.Manifest.Resources[0].Includes) != 1 {
+		t.Fatalf("Resources = %+v", res.Manifest.Resources)
+	}
+
 	streamer := res.Manifest.Dependencies[2]
 	if streamer.Scheme != SchemePlugin || streamer.User != "samp-incognito" || streamer.Repo != "samp-streamer-plugin" {
 		t.Errorf("streamer dependency parsed as %+v", streamer)
@@ -63,6 +69,30 @@ func TestLoad_PawnKitSpecExample(t *testing.T) {
 
 	if got := res.Manifest.EffectiveIncludePaths(); len(got) != 2 {
 		t.Errorf("EffectiveIncludePaths = %v", got)
+	}
+}
+
+func TestLoad_ValidatesResourceFieldsAndPaths(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/pawn.json", []byte(`{
+		"resources": [
+			{"platform": "linux"},
+			{"name": "plugin.zip", "platform": "windows", "files": {"plugin.dll": "../plugins/plugin.dll"}}
+		]
+	}`))
+
+	res, err := Load(source.NewRegistry(), m, "/proj/pawn.json")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	var missing, traversal bool
+	for _, d := range res.Diagnostics {
+		missing = missing || d.Code == CodeMissingResourceField
+		traversal = traversal || d.Code == CodePathTraversal
+	}
+	if !missing || !traversal {
+		t.Fatalf("diagnostics = %+v", res.Diagnostics)
 	}
 }
 

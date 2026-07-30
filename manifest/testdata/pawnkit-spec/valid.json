@@ -12,6 +12,16 @@
   "dev_dependencies": [
     "pawn-lang/pawn-tests"
   ],
+  "resources": [
+    {
+      "name": "streamer-*-linux.tar.gz",
+      "platform": "linux",
+      "version": "2.9.6",
+      "archive": true,
+      "includes": ["include"],
+      "plugins": ["plugins/streamer.so"]
+    }
+  ],
   "build": {
     "args": ["-d3", "-;+"],
     "compiler": {

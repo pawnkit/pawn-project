@@ -13,7 +13,7 @@ This table tracks sampctl fields formalized by PawnKit RFC 0002. "Supported" mea
 | `preset` (`samp`/`openmp`) | Yes | validated against the enum; mapped to `samp-037`/`openmp` RFC 0001 profile IDs by `profile.Select` when no explicit override |
 | `local` | Yes | decoded; no behavior currently keys off it (no build/run execution in this module) |
 | `include_path` | Yes | traversal-checked, resolved via `paths.Resolve` |
-| `resources` | Yes (permissive) | decoded as an open map, matching the schema's own permissive modeling (RFC 0002 open question: exact shape not fully specified upstream) |
+| `resources` | Yes | sampctl's resource array, including archives, includes, plugins, and file mappings |
 | `extract_ignore_patterns` | Yes | decoded; not yet consumed by any extraction logic in this module (toolchain archive extraction has its own traversal protection independent of this field) |
 | `contributors` | Yes | decoded as `[]any` (string or object form) |
 | `website` | Yes | decoded |

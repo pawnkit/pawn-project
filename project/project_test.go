@@ -194,7 +194,7 @@ func TestInstalledDependencyRoots_ResourceWithoutSourcePackage(t *testing.T) {
 	}
 }
 
-func TestLoad_DependencyWithLegacyResourceShape(t *testing.T) {
+func TestLoad_DependencyResourceManifestUsesIncludeFallback(t *testing.T) {
 	m := fsx.NewMem()
 	m.AddFile("/proj/pawn.json", []byte(`{"entry":"gamemodes/main.pwn"}`))
 	m.AddFile("/proj/gamemodes/main.pwn", []byte(""))

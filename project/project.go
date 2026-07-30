@@ -254,7 +254,7 @@ func dependencyPackageRoots(fsys fsx.FS, reg *source.Registry, root string) []st
 	}
 	relative = append(relative, result.Manifest.EffectiveIncludePaths()...)
 	if len(relative) == 0 {
-		return []string{root}
+		return dependencyFallbackRoots(fsys, root)
 	}
 	var roots []string
 	for _, rel := range relative {

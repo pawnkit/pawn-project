@@ -15,11 +15,11 @@ type Manifest struct {
 	Local       bool   `json:"local,omitempty" yaml:"local,omitempty"`
 	IncludePath string `json:"include_path,omitempty" yaml:"include_path,omitempty"`
 
-	Resources             map[string]any `json:"resources,omitempty" yaml:"resources,omitempty"`
-	ExtractIgnorePatterns []string       `json:"extract_ignore_patterns,omitempty" yaml:"extract_ignore_patterns,omitempty"`
-	Contributors          []any          `json:"contributors,omitempty" yaml:"contributors,omitempty"`
-	Website               string         `json:"website,omitempty" yaml:"website,omitempty"`
-	Experimental          Experimental   `json:"experimental" yaml:"experimental"`
+	Resources             []Resource   `json:"resources,omitempty" yaml:"resources,omitempty"`
+	ExtractIgnorePatterns []string     `json:"extract_ignore_patterns,omitempty" yaml:"extract_ignore_patterns,omitempty"`
+	Contributors          []any        `json:"contributors,omitempty" yaml:"contributors,omitempty"`
+	Website               string       `json:"website,omitempty" yaml:"website,omitempty"`
+	Experimental          Experimental `json:"experimental" yaml:"experimental"`
 
 	Build  *Build  `json:"build,omitempty" yaml:"build,omitempty"`
 	Builds []Build `json:"builds,omitempty" yaml:"builds,omitempty"`
@@ -31,6 +31,17 @@ type Manifest struct {
 
 	// SourcePath is the absolute path passed to Load.
 	SourcePath string `json:"-" yaml:"-"`
+}
+
+// Resource describes one sampctl release asset.
+type Resource struct {
+	Name     string            `json:"name,omitempty" yaml:"name,omitempty"`
+	Platform string            `json:"platform,omitempty" yaml:"platform,omitempty"`
+	Version  string            `json:"version,omitempty" yaml:"version,omitempty"`
+	Archive  bool              `json:"archive,omitempty" yaml:"archive,omitempty"`
+	Includes []string          `json:"includes,omitempty" yaml:"includes,omitempty"`
+	Plugins  []string          `json:"plugins,omitempty" yaml:"plugins,omitempty"`
+	Files    map[string]string `json:"files,omitempty" yaml:"files,omitempty"`
 }
 
 // Experimental mirrors the schema's "experimental" object.

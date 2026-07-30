@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.8 - 2026-07-30
+
+### Fixed
+
+- Decode and validate sampctl resource arrays instead of treating them as objects.
+
 ## 0.3.7 - 2026-07-30
 
 ### Added
