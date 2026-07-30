@@ -28,6 +28,10 @@ func (OSCacheFS) WriteFile(path string, content []byte) error {
 	return os.WriteFile(path, content, 0o600)
 }
 
+func (OSCacheFS) makeExecutable(path string) error {
+	return os.Chmod(path, 0o700) //nolint:gosec // cached compilers must be executable by their owner.
+}
+
 func (OSCacheFS) RemoveAll(path string) error { return os.RemoveAll(path) }
 
 func (OSCacheFS) Rename(oldPath, newPath string) error { return os.Rename(oldPath, newPath) }

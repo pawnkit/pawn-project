@@ -6,6 +6,8 @@ import (
 	"context"
 	"errors"
 	"io"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/pawnkit/pawnkit-core/hash"
@@ -331,6 +333,24 @@ func TestUpdate_LocalPathBypassesDownloader(t *testing.T) {
 
 	if dl.calls != 0 {
 		t.Errorf("downloader calls = %d, want 0", dl.calls)
+	}
+}
+
+func TestOSCacheFSMakesCompilerExecutable(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "pawncc")
+	fsys := OSCacheFS{}
+	if err := fsys.WriteFile(path, []byte("compiler")); err != nil {
+		t.Fatal(err)
+	}
+	if err := fsys.makeExecutable(path); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm()&0o100 == 0 {
+		t.Fatalf("mode = %v, owner execute bit is missing", info.Mode().Perm())
 	}
 }
 

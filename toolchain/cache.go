@@ -160,6 +160,11 @@ func (r *Resolver) storeFromDownload(opts ResolveOptions, rc io.Reader) (Info, e
 	} else if err := r.fsys.WriteFile(stagingDir+"/"+binary, data); err != nil {
 		return Info{}, fmt.Errorf("toolchain: writing %q: %w", stagingDir+"/"+binary, err)
 	}
+	if executable, ok := r.fsys.(interface{ makeExecutable(string) error }); ok {
+		if err := executable.makeExecutable(stagingDir + "/" + binary); err != nil {
+			return Info{}, fmt.Errorf("toolchain: making compiler executable: %w", err)
+		}
+	}
 
 	binaryContent, err := r.fsys.ReadFile(stagingDir + "/" + binary)
 	if err != nil {
