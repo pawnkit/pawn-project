@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "generated": "2026-07-30T00:00:00Z",
+  "sampctl_version": "1.14.1",
+  "dependencies": {
+    "github.com/pawn-lang/YSI-Includes": {
+      "constraint": ":5.10.0",
+      "resolved": "5.10.0",
+      "commit": "4444444444444444444444444444444444444444",
+      "integrity": "commit:4444444444444444444444444444444444444444",
+      "user": "pawn-lang",
+      "repo": "YSI-Includes"
+    },
+    "github.com/openmultiplayer/omp-stdlib": {
+      "constraint": "",
+      "resolved": "master",
+      "commit": "3333333333333333333333333333333333333333",
+      "integrity": "commit:3333333333333333333333333333333333333333",
+      "user": "openmultiplayer",
+      "repo": "omp-stdlib",
+      "transitive": true,
+      "required_by": ["github.com/pawn-lang/YSI-Includes"]
+    },
+    "includes://local/include": {
+      "user": "local",
+      "repo": "include",
+      "scheme": "includes",
+      "local": "include"
+    }
+  },
+  "runtime": {
+    "version": "1.4.0",
+    "platform": "linux",
+    "runtime_type": "openmp"
+  },
+  "build": {
+    "compiler_version": "3.10.11",
+    "compiler_preset": "openmp"
+  }
+}

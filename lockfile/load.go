@@ -44,16 +44,26 @@ func Load(reg *source.Registry, fsys fsx.FS, path string) (LoadResult, error) {
 	}
 
 	var l Lock
-	if err := json.Unmarshal(content, &l); err != nil {
+	var extra []diagnostic.Diagnostic
+	if _, sampctl := rawMap["version"]; sampctl {
+		l, extra, err = decodeSampctl(fileID, content, rawMap)
+	} else {
+		err = json.Unmarshal(content, &l)
+	}
+	if err != nil {
 		return LoadResult{}, fmt.Errorf("lockfile: decoding %q: %w", path, err)
 	}
 
 	l.SourcePath = path
 
-	v := &validator{fileID: fileID, content: content, raw: rawMap, l: &l}
+	validationRaw := rawMap
+	if _, sampctl := rawMap["version"]; sampctl {
+		validationRaw = map[string]any{"schemaVersion": float64(1), "packages": []any{}}
+	}
+	v := &validator{fileID: fileID, content: content, raw: validationRaw, l: &l}
 	v.run()
 
-	return LoadResult{Lock: &l, Diagnostics: v.diags}, nil
+	return LoadResult{Lock: &l, Diagnostics: append(extra, v.diags...)}, nil
 }
 
 func wholeFileSpan(file source.FileID, content []byte) source.Span {

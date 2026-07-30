@@ -8,6 +8,7 @@ const (
 	CodeSchemaVersionInvalid   = "pawn-project:lockfile-schema-version-unsupported"
 	CodeMissingField           = "pawn-project:lockfile-missing-required-field"
 	CodeInvalidChecksum        = "pawn-project:lockfile-invalid-checksum"
+	CodeInvalidIntegrity       = "pawn-project:lockfile-invalid-integrity"
 	CodeInvalidCommit          = "pawn-project:lockfile-invalid-commit"
 	CodeInvalidName            = "pawn-project:lockfile-invalid-name"
 	CodeInvalidSourceType      = "pawn-project:lockfile-invalid-source-type"

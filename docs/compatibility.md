@@ -29,16 +29,18 @@ This table tracks sampctl fields formalized by PawnKit RFC 0002. "Supported" mea
 
 ## pawn.lock field matrix
 
-`pawn.lock` has no sampctl precedent (RFC 0003); every field below is a new
-PawnKit format, fully supported by `lockfile.Load`.
+`lockfile.Load` reads sampctl 1.14 version 1 lockfiles and normalizes them into
+PawnKit's package graph. It also reads the earlier PawnKit draft during the
+RFC 0003 migration window.
 
 | Field | Supported |
 |---|---|
-| `schemaVersion` | Yes; only `1` is supported |
-| `generatedAt`, `manifestChecksum` | Yes, including the `manifest-lock-drift` doctor check |
-| `compiler.{vendor,version,checksum}` | Yes |
-| `runtimeProfile` | Yes |
-| `packages[].{name,resolved,version,commit,source,checksum,kind,platformArtifacts,dependencies}` | Yes, including the schema's conditional "archive sources require checksum" rule, checksum/commit/name pattern validation, and dependency-graph cycle/unknown-edge detection |
+| `version` | Yes; only sampctl version `1` is supported |
+| `generated`, `sampctl_version` | Yes |
+| `dependencies` | Yes, including constraints, revisions, integrity, schemes, local paths, and reverse edges |
+| `runtime` | Runtime type is exposed as the normalized runtime profile |
+| `build` | Compiler version and preset are exposed through the normalized compiler |
+| Earlier `schemaVersion` / `packages` draft | Read-only compatibility through 2027-07-30 |
 
 ## Toolchain manager
 
@@ -64,4 +66,6 @@ JSON syntax errors include the byte offset reported by `encoding/json`. Validati
 
 ## Schema version policy
 
-The manifest extension and lockfile currently have only schema version 1. When `pawnkit-spec` publishes version 2, this module will add another reader and keep version 1 during the migration window.
+The manifest extension uses schema version 1. The lockfile follows sampctl's
+version field. A new version gets a separate reader while the supported
+migration window remains open.

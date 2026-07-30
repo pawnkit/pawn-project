@@ -54,6 +54,70 @@ func TestLoad_PawnKitSpecExample(t *testing.T) {
 	}
 }
 
+func TestLoad_SampctlLockfile(t *testing.T) {
+	content, err := os.ReadFile("testdata/sampctl/valid.json")
+	if err != nil {
+		t.Fatalf("reading fixture: %v", err)
+	}
+
+	m := fsx.NewMem()
+	m.AddFile("/proj/pawn.lock", content)
+
+	res, err := Load(source.NewRegistry(), m, "/proj/pawn.lock")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	for _, d := range res.Diagnostics {
+		t.Errorf("unexpected diagnostic: [%s] %s", d.Code, d.Message)
+	}
+
+	ysi, ok := res.Lock.ByName("pawn-lang/YSI-Includes")
+	if !ok {
+		t.Fatal("YSI dependency was not normalized")
+	}
+	if len(ysi.Dependencies) != 1 || ysi.Dependencies[0] != "openmultiplayer/omp-stdlib" {
+		t.Fatalf("YSI dependencies = %v", ysi.Dependencies)
+	}
+	if res.Lock.Compiler == nil || res.Lock.Compiler.Vendor != "openmultiplayer" {
+		t.Fatalf("compiler = %+v", res.Lock.Compiler)
+	}
+	if res.Lock.RuntimeProfile != "openmp" {
+		t.Fatalf("runtime profile = %q", res.Lock.RuntimeProfile)
+	}
+	local, ok := res.Lock.ByName("local/include")
+	if !ok || local.Source.Type != SourceTypeLocal || local.Source.URL != "include" {
+		t.Fatalf("local dependency = %+v, found %v", local, ok)
+	}
+}
+
+func TestLoad_SampctlRejectsUnknownReverseEdgeAndUnsafeLocalPath(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/pawn.lock", []byte(`{
+		"version": 1,
+		"generated": "2026-07-30T00:00:00Z",
+		"sampctl_version": "1.14.1",
+		"dependencies": {
+			"includes://local/test": {
+				"constraint": "",
+				"resolved": "local",
+				"commit": "abcdef1",
+				"user": "local",
+				"repo": "test",
+				"scheme": "includes",
+				"local": "../outside",
+				"required_by": ["missing/package"]
+			}
+		}
+	}`))
+
+	res, err := Load(source.NewRegistry(), m, "/proj/pawn.lock")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	assertHasCode(t, res.Diagnostics, CodePathTraversal)
+	assertHasCode(t, res.Diagnostics, CodeUnknownDependencyEdge)
+}
+
 func TestLoad_MalformedJSON(t *testing.T) {
 	m := fsx.NewMem()
 	m.AddFile("/proj/pawn.lock", []byte(`{"schemaVersion": 1, "packages": [`))

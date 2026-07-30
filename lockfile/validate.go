@@ -90,10 +90,13 @@ func (v *validator) checkPackageIdentity(i int, p Package) {
 		v.add(CodeInvalidName, diagnostic.SeverityError, "packages[%d]: name %q must match user/repo", i, p.Name)
 	}
 
-	if p.Resolved == "" {
+	if p.Source.Type != SourceTypeLocal && p.Resolved == "" {
 		v.add(CodeMissingField, diagnostic.SeverityError, `packages[%d]: "resolved" is required`, i)
 	}
 
+	if p.Source.Type == SourceTypeLocal {
+		return
+	}
 	if p.Commit == "" {
 		v.add(CodeMissingField, diagnostic.SeverityError, `packages[%d]: "commit" is required`, i)
 	} else if !commitPattern.MatchString(p.Commit) {

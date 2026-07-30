@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.4 - 2026-07-30
+
+### Added
+
+- Read sampctl 1.14 `pawn.lock` files and normalize their dependency graph.
+
 ## 0.3.3 - 2026-07-30
 
 ### Fixed
