@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.7 - 2026-07-30
+
+### Added
+
+- Restore source checkouts for every sampctl dependency scheme.
+- Verify clean checkouts and sampctl-compatible directory integrity.
+
 ## 0.3.6 - 2026-07-30
 
 ### Fixed

@@ -51,9 +51,9 @@ Lower-level packages do not import `project`. This lets a consumer use path or m
 
 PawnKit does not replace sampctl's manifest. `pawn-project` reads the existing `pawn.json` and `pawn.yaml` fields, including sampctl dependency strings. PawnKit-specific settings live under the optional `pawnkit` object.
 
-The `dependency` package restores source and include dependencies at their
-locked Git commits. Resource packages such as plugins still require sampctl
-until PawnKit defines their extraction layout. The field-by-field status is in
+The `dependency` package restores every remote dependency source at its locked
+Git commit. Plugin and component binaries still require sampctl until PawnKit
+defines their resource extraction layout. The field-by-field status is in
 [compatibility.md](compatibility.md).
 
 ## Design choices

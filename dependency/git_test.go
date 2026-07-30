@@ -2,6 +2,8 @@ package dependency
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
 	"path/filepath"
 	"strings"
@@ -96,5 +98,24 @@ func TestGitInstallerStagesExactCommit(t *testing.T) {
 	}
 	if status != StatusPresent {
 		t.Fatalf("second status = %q, want %q", status, StatusPresent)
+	}
+}
+
+func TestVerifyDirectoryIntegrity(t *testing.T) {
+	root := t.TempDir()
+	content := []byte("main() {}\n")
+	if err := os.WriteFile(filepath.Join(root, "main.pwn"), content, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	hash := sha256.New()
+	_, _ = hash.Write([]byte("main.pwn"))
+	_, _ = hash.Write(content)
+	expected := "sha256:" + hex.EncodeToString(hash.Sum(nil))
+
+	if err := verifyDirectoryIntegrity(root, expected); err != nil {
+		t.Fatalf("verifyDirectoryIntegrity: %v", err)
+	}
+	if err := verifyDirectoryIntegrity(root, "sha256:"+strings.Repeat("0", 64)); err == nil {
+		t.Fatal("mismatched integrity passed")
 	}
 }

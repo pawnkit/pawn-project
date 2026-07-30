@@ -49,24 +49,54 @@ func (g GitInstaller) Install(
 	}
 
 	if _, err := os.Stat(target); err == nil {
-		revision, runErr := runner.Run(ctx, command, "-C", target, "rev-parse", "HEAD")
-		if runErr != nil {
-			return "", fmt.Errorf("dependency: existing path %q is not a Git checkout: %w", target, runErr)
-		}
-		expected, runErr := runner.Run(ctx, command, "-C", target, "rev-parse", pkg.Commit+"^{commit}")
-		if runErr != nil || strings.TrimSpace(revision) != strings.TrimSpace(expected) {
-			return "", fmt.Errorf(
-				"dependency: existing checkout %q is at %s, want %s",
-				target,
-				strings.TrimSpace(revision),
-				pkg.Commit,
-			)
-		}
-		return StatusPresent, nil
+		return verifyExistingCheckout(ctx, runner, command, pkg, target)
 	} else if !errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("dependency: checking %q: %w", target, err)
 	}
 
+	return installCheckout(ctx, runner, command, pkg, target)
+}
+
+func verifyExistingCheckout(
+	ctx context.Context,
+	runner gitRunner,
+	command string,
+	pkg lockfile.Package,
+	target string,
+) (Status, error) {
+	revision, err := runner.Run(ctx, command, "-C", target, "rev-parse", "HEAD")
+	if err != nil {
+		return "", fmt.Errorf("dependency: existing path %q is not a Git checkout: %w", target, err)
+	}
+	expected, err := runner.Run(ctx, command, "-C", target, "rev-parse", pkg.Commit+"^{commit}")
+	if err != nil || strings.TrimSpace(revision) != strings.TrimSpace(expected) {
+		return "", fmt.Errorf(
+			"dependency: existing checkout %q is at %s, want %s",
+			target,
+			strings.TrimSpace(revision),
+			pkg.Commit,
+		)
+	}
+	status, err := runner.Run(ctx, command, "-C", target, "status", "--porcelain", "--untracked-files=all")
+	if err != nil {
+		return "", fmt.Errorf("dependency: checking %q status: %w", target, err)
+	}
+	if strings.TrimSpace(status) != "" {
+		return "", fmt.Errorf("dependency: existing checkout %q has local changes", target)
+	}
+	if err := verifyDirectoryIntegrity(target, pkg.Checksum); err != nil {
+		return "", err
+	}
+	return StatusPresent, nil
+}
+
+func installCheckout(
+	ctx context.Context,
+	runner gitRunner,
+	command string,
+	pkg lockfile.Package,
+	target string,
+) (Status, error) {
 	parent := filepath.Dir(target)
 	if err := os.MkdirAll(parent, 0o750); err != nil {
 		return "", fmt.Errorf("dependency: creating %q: %w", parent, err)
@@ -106,6 +136,9 @@ func (g GitInstaller) Install(
 	}
 	if strings.TrimSpace(revision) != strings.TrimSpace(expected) {
 		return "", fmt.Errorf("dependency: checkout resolved to %s, want %s", strings.TrimSpace(revision), pkg.Commit)
+	}
+	if err := verifyDirectoryIntegrity(staging, pkg.Checksum); err != nil {
+		return "", err
 	}
 	if err := os.Rename(staging, target); err != nil {
 		return "", fmt.Errorf("dependency: installing %s: %w", pkg.Name, err)

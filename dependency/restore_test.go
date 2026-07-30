@@ -80,16 +80,19 @@ func TestRestoreRejectsMissingLocalDependency(t *testing.T) {
 	}
 }
 
-func TestRestoreRejectsResourceKinds(t *testing.T) {
+func TestRestoreChecksOutResourceSources(t *testing.T) {
 	lock := &lockfile.Lock{Packages: []lockfile.Package{{
 		Name: "samp-incognito/streamer", Kind: lockfile.KindPlugin,
 		Source: lockfile.PackageSource{Type: lockfile.SourceTypeGit, URL: "https://example.com/streamer"},
 	}}}
 
-	_, err := NewRestorer(fsx.NewMem(), &recordingInstaller{}).
+	results, err := NewRestorer(fsx.NewMem(), &recordingInstaller{}).
 		Restore(context.Background(), "/project", lock)
-	if !errors.Is(err, ErrUnsupportedKind) {
-		t.Fatalf("error = %v, want ErrUnsupportedKind", err)
+	if err != nil {
+		t.Fatalf("Restore: %v", err)
+	}
+	if got, want := results[0].Path, "/project/dependencies/streamer"; got != want {
+		t.Fatalf("path = %q, want %q", got, want)
 	}
 }
 

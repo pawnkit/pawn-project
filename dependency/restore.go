@@ -14,9 +14,6 @@ import (
 	"github.com/pawnkit/pawn-project/pathutil"
 )
 
-// ErrUnsupportedKind marks dependencies that need resource extraction.
-var ErrUnsupportedKind = errors.New("dependency: package kind is not supported")
-
 // Status describes a restored dependency.
 type Status string
 
@@ -128,9 +125,14 @@ func (r *Restorer) restorePackage(
 	}
 
 	switch pkg.Kind {
-	case lockfile.KindDependency, lockfile.KindDevDependency, lockfile.KindIncludes:
+	case lockfile.KindDependency,
+		lockfile.KindDevDependency,
+		lockfile.KindIncludes,
+		lockfile.KindPlugin,
+		lockfile.KindComponent,
+		lockfile.KindFilterscript:
 	default:
-		return Result{}, fmt.Errorf("%w: %s", ErrUnsupportedKind, pkg.Kind)
+		return Result{}, fmt.Errorf("dependency: package kind %q is not supported", pkg.Kind)
 	}
 
 	repo := packageRepo(pkg.Name)

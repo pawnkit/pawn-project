@@ -48,9 +48,9 @@ RFC 0003 migration window.
 `pawn.lock`. Existing checkouts must already match that commit. Local paths are
 checked but not copied.
 
-Source, development, and include dependencies are supported. Plugins,
-components, and filterscripts still need sampctl because their resource
-extraction layout is not yet part of RFC 0003.
+All remote schemes use the same source checkout layout. Plugin and component
+binaries still need sampctl because their resource extraction layout is not
+yet part of RFC 0003.
 
 ## Toolchain manager
 
