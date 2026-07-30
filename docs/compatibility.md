@@ -42,6 +42,16 @@ RFC 0003 migration window.
 | `build` | Compiler version and preset are exposed through the normalized compiler |
 | Earlier `schemaVersion` / `packages` draft | Read-only compatibility through 2027-07-30 |
 
+## Dependency restore
+
+`dependency.Restorer` installs Git dependencies at the commit recorded in
+`pawn.lock`. Existing checkouts must already match that commit. Local paths are
+checked but not copied.
+
+Source, development, and include dependencies are supported. Plugins,
+components, and filterscripts still need sampctl because their resource
+extraction layout is not yet part of RFC 0003.
+
 ## Toolchain manager
 
 | Capability (ARCHITECTURE.md) | Status |

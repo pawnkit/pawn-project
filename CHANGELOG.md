@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.5 - 2026-07-30
+
+### Added
+
+- Restore locked Git and local source dependencies without replacing existing checkouts.
+
 ## 0.3.4 - 2026-07-30
 
 ### Added

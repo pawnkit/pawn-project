@@ -6,6 +6,9 @@
 
 It finds the workspace, reads `pawn.json` or `pawn.yaml`, loads `pawn.lock`, resolves include paths, and selects the requested build and runtime profile. The formatter, linter, language server, test runner, and CLI all use the same result.
 
+The `dependency` package restores source and include dependencies at the exact
+Git commits recorded in `pawn.lock`.
+
 ## Use it in Go
 
 ```sh

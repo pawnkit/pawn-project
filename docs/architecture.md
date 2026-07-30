@@ -34,6 +34,7 @@ Content problems become diagnostics with stable codes. Environment failures, suc
 | `workspace` | Upward search for `pawn.json` or `pawn.yaml` |
 | `manifest` | Project manifest decoding and validation |
 | `lockfile` | Lockfile validation and dependency graph |
+| `dependency` | Locked source restoration |
 | `profile` | Build, runtime, and target profile selection |
 | `paths` | Absolute entry, output, include, and generated paths |
 | `include` | Deterministic include resolution |
@@ -50,7 +51,10 @@ Lower-level packages do not import `project`. This lets a consumer use path or m
 
 PawnKit does not replace sampctl's manifest. `pawn-project` reads the existing `pawn.json` and `pawn.yaml` fields, including sampctl dependency strings. PawnKit-specific settings live under the optional `pawnkit` object.
 
-This module does not fetch packages or implement `sampctl ensure`. When sampctl has populated `dependencies/`, those package and resource include paths join the project resolver. The field-by-field status is in [compatibility.md](compatibility.md).
+The `dependency` package restores source and include dependencies at their
+locked Git commits. Resource packages such as plugins still require sampctl
+until PawnKit defines their extraction layout. The field-by-field status is in
+[compatibility.md](compatibility.md).
 
 ## Design choices
 
