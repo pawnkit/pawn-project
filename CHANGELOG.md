@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.9 - 2026-07-30
+
+### Added
+
+- Find local compilers using the host command search rules.
+
 ## 0.3.8 - 2026-07-30
 
 ### Fixed
