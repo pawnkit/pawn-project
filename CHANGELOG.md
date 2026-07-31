@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.20.0 - 2026-07-31
+
+- Write resolved graphs as sampctl-compatible lockfiles.
+- Preserve unrelated lock data and valid resource records.
+
 ## 0.19.0 - 2026-07-31
 
 - Add provider-neutral dependency graph resolution.

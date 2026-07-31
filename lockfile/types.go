@@ -55,6 +55,7 @@ type Package struct {
 	Integrity         string             `json:"-"`
 	Kind              string             `json:"kind"`
 	Branch            string             `json:"-"`
+	Path              string             `json:"-"`
 	Transitive        bool               `json:"-"`
 	RequiredBy        []string           `json:"-"`
 	PlatformArtifacts []PlatformArtifact `json:"platformArtifacts,omitempty"`

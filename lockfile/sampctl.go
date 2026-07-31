@@ -177,7 +177,8 @@ func normalizeSampctlPackages(
 			Resolved: dependency.Resolved, Commit: dependency.Commit,
 			Source:   PackageSource{Type: sourceType, URL: sourceURL},
 			Checksum: checksum, Integrity: dependency.Integrity, Kind: kind,
-			Branch: dependency.Branch, Transitive: dependency.Transitive,
+			Branch: dependency.Branch, Path: dependency.Path,
+			Transitive: dependency.Transitive,
 			RequiredBy: append([]string(nil), dependency.RequiredBy...),
 		})
 	}
