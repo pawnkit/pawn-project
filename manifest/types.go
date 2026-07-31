@@ -130,12 +130,13 @@ type Runtime struct {
 
 // PawnKitExtension contains optional PawnKit settings.
 type PawnKitExtension struct {
-	SchemaVersion int                       `json:"schemaVersion" yaml:"schemaVersion"`
-	Profile       string                    `json:"profile,omitempty" yaml:"profile,omitempty"`
-	IncludePaths  []string                  `json:"includePaths,omitempty" yaml:"includePaths,omitempty"`
-	Tests         map[string]any            `json:"tests,omitempty" yaml:"tests,omitempty"`
-	Tool          map[string]map[string]any `json:"tool,omitempty" yaml:"tool,omitempty"`
-	Lockfile      string                    `json:"lockfile,omitempty" yaml:"lockfile,omitempty"`
+	SchemaVersion       int                       `json:"schemaVersion" yaml:"schemaVersion"`
+	Profile             string                    `json:"profile,omitempty" yaml:"profile,omitempty"`
+	IncludePaths        []string                  `json:"includePaths,omitempty" yaml:"includePaths,omitempty"`
+	DependencyOverrides map[string]string         `json:"dependencyOverrides,omitempty" yaml:"dependencyOverrides,omitempty"`
+	Tests               map[string]any            `json:"tests,omitempty" yaml:"tests,omitempty"`
+	Tool                map[string]map[string]any `json:"tool,omitempty" yaml:"tool,omitempty"`
+	Lockfile            string                    `json:"lockfile,omitempty" yaml:"lockfile,omitempty"`
 }
 
 // LockfilePath returns the configured lockfile path, applying the schema's

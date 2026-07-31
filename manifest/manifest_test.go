@@ -329,6 +329,44 @@ func TestLoad_PawnKitUnknownField(t *testing.T) {
 	}
 }
 
+func TestLoad_DependencyOverrides(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/pawn.json", []byte(`{
+		"pawnkit": {
+			"schemaVersion": 1,
+			"dependencyOverrides": {
+				"Misiur/YSI-Includes": "pawn-lang/YSI-Includes@5.x"
+			}
+		}
+	}`))
+
+	res, err := Load(source.NewRegistry(), m, "/proj/pawn.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Diagnostics) != 0 || res.Manifest.PawnKit.DependencyOverrides["Misiur/YSI-Includes"] != "pawn-lang/YSI-Includes@5.x" {
+		t.Fatalf("result = %#v", res)
+	}
+}
+
+func TestLoad_RejectsInvalidDependencyOverrides(t *testing.T) {
+	for name, overrides := range map[string]string{
+		"versioned key":      `"owner/package:v1": "other/package"`,
+		"scheme change":      `"plugin://owner/package": "other/package"`,
+		"duplicate identity": `"owner/package": "one/package", "https://github.com/owner/package": "two/package"`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			m := fsx.NewMem()
+			m.AddFile("/proj/pawn.json", []byte(`{"pawnkit":{"schemaVersion":1,"dependencyOverrides":{`+overrides+`}}}`))
+			res, err := Load(source.NewRegistry(), m, "/proj/pawn.json")
+			if err != nil {
+				t.Fatal(err)
+			}
+			assertHasCode(t, res.Diagnostics, CodeInvalidDependency)
+		})
+	}
+}
+
 func TestLoad_InvalidProfilePattern(t *testing.T) {
 	m := fsx.NewMem()
 	m.AddFile("/proj/pawn.json", []byte(`{"pawnkit": {"schemaVersion": 1, "profile": "Not_Valid!"}}`))

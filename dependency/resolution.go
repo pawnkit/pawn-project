@@ -98,7 +98,7 @@ func (r *GraphResolver) Resolve(
 }
 
 // ResolveWithOptions selects exact revisions with explicit update behavior.
-func (r *GraphResolver) ResolveWithOptions( //nolint:gocyclo // Graph traversal validates each state transition.
+func (r *GraphResolver) ResolveWithOptions( //nolint:gocyclo,funlen // Graph traversal validates each state transition.
 	ctx context.Context,
 	root *manifest.Manifest,
 	existing *lockfile.Lock,
@@ -115,6 +115,10 @@ func (r *GraphResolver) ResolveWithOptions( //nolint:gocyclo // Graph traversal 
 	}
 
 	locked := lockedPackages(existing)
+	overrides, err := dependencyOverrides(root)
+	if err != nil {
+		return nil, err
+	}
 	queue := rootResolutionRequests(root)
 	packages := make(map[string]*lockfile.Package)
 	constraints := make(map[string]string)
@@ -126,6 +130,12 @@ func (r *GraphResolver) ResolveWithOptions( //nolint:gocyclo // Graph traversal 
 		}
 		request := queue[0]
 		queue = queue[1:]
+		if !request.direct {
+			request.dependency, err = applyDependencyOverride(request.dependency, overrides)
+			if err != nil {
+				return nil, err
+			}
+		}
 		key := dependencyKey(request.dependency)
 		constraint := dependencyConstraint(request.dependency)
 
@@ -219,6 +229,51 @@ func (r *GraphResolver) ResolveWithOptions( //nolint:gocyclo // Graph traversal 
 	}
 
 	return sortedResolvedPackages(packages), nil
+}
+
+func dependencyOverrides(root *manifest.Manifest) (map[string]manifest.Dependency, error) {
+	if root.PawnKit == nil || len(root.PawnKit.DependencyOverrides) == 0 {
+		return nil, nil
+	}
+	overrides := make(map[string]manifest.Dependency, len(root.PawnKit.DependencyOverrides))
+	for rawSource, rawReplacement := range root.PawnKit.DependencyOverrides {
+		source, err := manifest.ParseDependency(rawSource)
+		if err != nil || source.RefKind != manifest.RefNone {
+			return nil, fmt.Errorf("dependency: invalid override identity %q", rawSource)
+		}
+		replacement, err := manifest.ParseDependency(rawReplacement)
+		if err != nil {
+			return nil, fmt.Errorf("dependency: invalid override replacement %q: %w", rawReplacement, err)
+		}
+		if source.Scheme != replacement.Scheme {
+			return nil, fmt.Errorf("dependency: override %q changes dependency scheme", rawSource)
+		}
+		key := dependencyKey(source)
+		if _, exists := overrides[key]; exists {
+			return nil, fmt.Errorf("dependency: duplicate override identity %q", rawSource)
+		}
+		overrides[key] = replacement
+	}
+	return overrides, nil
+}
+
+func applyDependencyOverride(
+	dep manifest.Dependency,
+	overrides map[string]manifest.Dependency,
+) (manifest.Dependency, error) {
+	seen := make(map[string]bool, len(overrides))
+	for {
+		key := dependencyKey(dep)
+		replacement, ok := overrides[key]
+		if !ok {
+			return dep, nil
+		}
+		if seen[key] {
+			return manifest.Dependency{}, fmt.Errorf("dependency: override cycle detected at %s", key)
+		}
+		seen[key] = true
+		dep = replacement
+	}
 }
 
 func constraintsConflict(

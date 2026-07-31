@@ -46,6 +46,9 @@
     "schemaVersion": 1,
     "profile": "openmp",
     "includePaths": ["include", "vendor/include"],
+    "dependencyOverrides": {
+      "Misiur/YSI-Includes": "pawn-lang/YSI-Includes@5.x"
+    },
     "tool": {
       "pawnlint": {
         "profile": "recommended"

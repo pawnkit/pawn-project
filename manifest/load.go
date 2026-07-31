@@ -22,12 +22,13 @@ type LoadResult struct {
 var profilePattern = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 
 var knownPawnKitFields = map[string]bool{
-	"schemaVersion": true,
-	"profile":       true,
-	"includePaths":  true,
-	"tests":         true,
-	"tool":          true,
-	"lockfile":      true,
+	"schemaVersion":       true,
+	"profile":             true,
+	"includePaths":        true,
+	"dependencyOverrides": true,
+	"tests":               true,
+	"tool":                true,
+	"lockfile":            true,
 }
 
 // Load reads and validates an absolute JSON or YAML manifest path. Content

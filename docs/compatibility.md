@@ -21,6 +21,7 @@ This table tracks sampctl fields formalized by PawnKit RFC 0002. "Supported" mea
 | `build` / `builds[]` | Yes | single or named-array form; `builds[].name` required; active build include paths are resolved |
 | `runtime` / `runtimes[]` | Yes | single or named-array form; `runtimes[].name` required, enforced; only fields `pawn-project` itself reasons about are named explicitly (`name`, `version`, `mode`, `port`, `gamemodes`, `filterscripts`, `plugins`); the rest round-trip through `Extra` |
 | `pawnkit.schemaVersion` | Yes | required when `pawnkit` present; only `1` currently supported |
+| `pawnkit.dependencyOverrides` | Experimental | root-only transitive package replacements from RFC 0023 |
 | `pawnkit.profile` | Yes | overrides preset-based mapping; pattern-validated |
 | `pawnkit.includePaths` | Yes | concatenated with `include_path`, traversal-checked, de-duplicated |
 | `pawnkit.tests` | Decoded, not interpreted | `pawntest`'s concern per RFC 0007 |

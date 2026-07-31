@@ -1,7 +1,7 @@
 # Provenance
 
 - **Origin:** `github.com/pawnkit/pawnkit-spec`, path `examples/pawn-project/valid.json`.
-- **Commit:** `54e6bc25081ca1300861b969d18f68be4bec2162`.
+- **Commit:** `ced810c4c23b0558aa059affd0902a9cb7b9dca7`.
 - **License:** MIT (Copyright (c) 2026 pawnkit).
 - **Allowed use:** conformance fixture — asserts pawn-project's manifest
   loader accepts the canonical example the schema's own repository ships,

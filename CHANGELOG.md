@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.32.0 - 2026-07-31
+
+- Apply reviewed root overrides to obsolete transitive dependencies.
+
 ## 0.31.0 - 2026-07-31
 
 - Prefer direct dependency constraints over transitive requests.

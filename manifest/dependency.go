@@ -20,6 +20,8 @@ const (
 	SchemeFilterscript Scheme = "filterscript"
 )
 
+const defaultDependencySite = "github.com"
+
 // RefKind identifies how a dependency string pins a version.
 type RefKind string
 
@@ -50,9 +52,21 @@ func (d Dependency) Name() string {
 func (d Dependency) RepositoryURL() string {
 	site := d.Site
 	if site == "" {
-		site = "github.com"
+		site = defaultDependencySite
 	}
 	return "https://" + site + "/" + d.Name()
+}
+
+func dependencyIdentity(d Dependency) string {
+	site := d.Site
+	if site == "" {
+		site = defaultDependencySite
+	}
+	identity := site + "/" + d.Name()
+	if d.Scheme != SchemeDependency {
+		identity = string(d.Scheme) + "://" + identity
+	}
+	return identity
 }
 
 // dependencyPattern matches pawn-project.schema.json's $defs.dependencyString.
@@ -93,7 +107,7 @@ func ParseDependency(raw string) (Dependency, error) {
 	if err != nil {
 		return Dependency{}, err
 	}
-	if scheme != SchemeDependency && site != "github.com" {
+	if scheme != SchemeDependency && site != defaultDependencySite {
 		return Dependency{}, errors.New("manifest: prefixed dependencies must use GitHub")
 	}
 
@@ -128,7 +142,7 @@ func splitDependencyReference(raw string) (string, RefKind, string) {
 }
 
 func parseDependencyRepository(raw string) (string, string, string, error) {
-	site := "github.com"
+	site := defaultDependencySite
 	userRepo := raw
 	if strings.HasPrefix(raw, "https://") {
 		parsed, err := url.Parse(raw)

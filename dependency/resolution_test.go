@@ -107,6 +107,65 @@ func TestGraphResolverPrefersDirectConstraintOverTransitive(t *testing.T) {
 	}
 }
 
+func TestGraphResolverAppliesRootOverride(t *testing.T) {
+	root := &manifest.Manifest{
+		Dependencies: []manifest.Dependency{mustDependency(t, "owner/parent")},
+		PawnKit: &manifest.PawnKitExtension{DependencyOverrides: map[string]string{
+			"old/child": "new/child@main",
+		}},
+	}
+	provider := &graphRevisionProvider{
+		revisions: map[string]Revision{
+			"github.com/owner/parent": {
+				Commit: commitA, Resolved: "HEAD",
+				Manifest: manifest.Manifest{Dependencies: []manifest.Dependency{
+					mustDependency(t, "old/child:v1"),
+				}},
+			},
+			"github.com/new/child": {Commit: commitB, Resolved: "main"},
+		},
+		locked: map[string]bool{},
+	}
+
+	packages, err := NewGraphResolver(provider).Resolve(context.Background(), root, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	child := packageByKey(t, packages, "github.com/new/child")
+	if child.Constraint != "@main" || len(child.RequiredBy) != 1 {
+		t.Fatalf("child = %#v", child)
+	}
+	if len(packages) != 2 {
+		t.Fatalf("packages = %#v", packages)
+	}
+}
+
+func TestGraphResolverRejectsOverrideCycle(t *testing.T) {
+	root := &manifest.Manifest{
+		Dependencies: []manifest.Dependency{mustDependency(t, "owner/parent")},
+		PawnKit: &manifest.PawnKitExtension{DependencyOverrides: map[string]string{
+			"old/a": "old/b",
+			"old/b": "old/a",
+		}},
+	}
+	provider := &graphRevisionProvider{
+		revisions: map[string]Revision{
+			"github.com/owner/parent": {
+				Commit: commitA, Resolved: "HEAD",
+				Manifest: manifest.Manifest{Dependencies: []manifest.Dependency{
+					mustDependency(t, "old/a"),
+				}},
+			},
+		},
+		locked: map[string]bool{},
+	}
+
+	_, err := NewGraphResolver(provider).Resolve(context.Background(), root, nil)
+	if err == nil || !strings.Contains(err.Error(), "override cycle") {
+		t.Fatalf("Resolve error = %v", err)
+	}
+}
+
 func TestGraphResolverPassesMatchingLockEntry(t *testing.T) {
 	dependency := mustDependency(t, "owner/a:v1")
 	root := &manifest.Manifest{Dependencies: []manifest.Dependency{dependency}}

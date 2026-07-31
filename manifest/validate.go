@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/pawnkit/pawnkit-core/diagnostic"
 	"github.com/pawnkit/pawnkit-core/source"
@@ -169,6 +170,44 @@ func (v *validator) checkPawnKit() {
 	if v.m.PawnKit != nil && v.m.PawnKit.Profile != "" && !profilePattern.MatchString(v.m.PawnKit.Profile) {
 		v.add(CodeInvalidProfile, diagnostic.SeverityError,
 			"pawnkit.profile %q does not match ^[a-z][a-z0-9-]*$", v.m.PawnKit.Profile)
+	}
+	v.checkDependencyOverrides()
+}
+
+func (v *validator) checkDependencyOverrides() {
+	if v.m.PawnKit == nil || len(v.m.PawnKit.DependencyOverrides) == 0 {
+		return
+	}
+	keys := make([]string, 0, len(v.m.PawnKit.DependencyOverrides))
+	for key := range v.m.PawnKit.DependencyOverrides {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	seen := make(map[string]string, len(keys))
+	for _, key := range keys {
+		source, err := ParseDependency(key)
+		if err != nil || source.RefKind != RefNone {
+			v.add(CodeInvalidDependency, diagnostic.SeverityError,
+				"pawnkit.dependencyOverrides key %q must be a dependency identity without a version", key)
+			continue
+		}
+		replacementRaw := v.m.PawnKit.DependencyOverrides[key]
+		replacement, err := ParseDependency(replacementRaw)
+		if err != nil {
+			v.add(CodeInvalidDependency, diagnostic.SeverityError,
+				"pawnkit.dependencyOverrides[%q]: %v", key, err)
+			continue
+		}
+		if source.Scheme != replacement.Scheme {
+			v.add(CodeInvalidDependency, diagnostic.SeverityError,
+				"pawnkit.dependencyOverrides[%q] cannot change dependency scheme", key)
+		}
+		normalized := dependencyIdentity(source)
+		if previous, ok := seen[normalized]; ok {
+			v.add(CodeInvalidDependency, diagnostic.SeverityError,
+				"pawnkit.dependencyOverrides keys %q and %q identify the same package", previous, key)
+		}
+		seen[normalized] = key
 	}
 }
 
