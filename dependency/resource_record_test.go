@@ -95,6 +95,48 @@ func TestResolveResourceRecordMapsTarAndComponent(t *testing.T) {
 	}
 }
 
+func TestResolveResourceRecordFallsBackToUniquePluginBasename(t *testing.T) {
+	archive := zipResource(t, map[string][]byte{
+		"plugins/pawn-memory.so": []byte("plugin"),
+	})
+	resource := manifest.Resource{
+		Name: "pawn-memory.zip", Platform: "linux", Archive: true,
+		Plugins: []string{"plugins/debian-stretch/pawn-memory.so"},
+	}
+	record, err := ResolveResourceRecord(
+		context.Background(), resourceDownloader{archive}, "owner/pawn-memory", "linux-amd64",
+		resource, ReleaseAsset{
+			Name: "pawn-memory.zip", URL: "https://example.com/pawn-memory.zip", Size: int64(len(archive)),
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(record.Files) != 1 || record.Files[0].Source != "plugins/pawn-memory.so" {
+		t.Fatalf("files = %#v", record.Files)
+	}
+}
+
+func TestResolveResourceRecordRejectsAmbiguousPluginBasename(t *testing.T) {
+	archive := zipResource(t, map[string][]byte{
+		"plugins/a/plugin.so": []byte("a"),
+		"plugins/b/plugin.so": []byte("b"),
+	})
+	resource := manifest.Resource{
+		Name: "plugin.zip", Platform: "linux", Archive: true,
+		Plugins: []string{"plugins/old/plugin.so"},
+	}
+	_, err := ResolveResourceRecord(
+		context.Background(), resourceDownloader{archive}, "owner/plugin", "linux-amd64",
+		resource, ReleaseAsset{
+			Name: "plugin.zip", URL: "https://example.com/plugin.zip", Size: int64(len(archive)),
+		},
+	)
+	if err == nil || !strings.Contains(err.Error(), "2 basename matches") {
+		t.Fatalf("ResolveResourceRecord error = %v", err)
+	}
+}
+
 func TestResolveResourceRecordMapsSingleFile(t *testing.T) {
 	content := []byte("plugin")
 	resource := manifest.Resource{

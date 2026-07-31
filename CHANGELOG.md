@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.33.0 - 2026-07-31
+
+- Recover stale plugin archive paths when one file has the same basename.
+
 ## 0.32.1 - 2026-07-31
 
 - Apply same-package constraint overrides without reporting a cycle.

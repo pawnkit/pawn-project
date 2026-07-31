@@ -210,6 +210,11 @@ func mapResourceFiles(
 	resource manifest.Resource,
 	files []resourceArchiveFile,
 ) ([]lockfile.ResolvedResourceFile, error) {
+	var err error
+	resource, err = applyPluginBasenameFallback(resource, files)
+	if err != nil {
+		return nil, err
+	}
 	var resolved []lockfile.ResolvedResourceFile
 	destinations := make(map[string]string)
 	for _, file := range files {
@@ -244,6 +249,49 @@ func mapResourceFiles(
 		return resolved[i].Destination < resolved[j].Destination
 	})
 	return resolved, nil
+}
+
+func applyPluginBasenameFallback(
+	resource manifest.Resource,
+	files []resourceArchiveFile,
+) (manifest.Resource, error) {
+	patterns := append([]string(nil), resource.Plugins...)
+	for index, pattern := range patterns {
+		matched := false
+		for _, file := range files {
+			if matchResourcePath(file.name, []string{pattern}) {
+				matched = true
+				break
+			}
+		}
+		if matched {
+			continue
+		}
+		base := path.Base(pattern)
+		if base == "." || base == "/" || base == "" || strings.ContainsAny(base, `\\[](){}*+?^$|`) {
+			continue
+		}
+		var candidates []string
+		for _, file := range files {
+			if path.Base(file.name) == base {
+				candidates = append(candidates, file.name)
+			}
+		}
+		switch len(candidates) {
+		case 0:
+			continue
+		case 1:
+			patterns[index] = "^" + regexp.QuoteMeta(candidates[0]) + "$"
+		default:
+			return manifest.Resource{}, fmt.Errorf(
+				"dependency: plugin %q has %d basename matches in the archive",
+				pattern,
+				len(candidates),
+			)
+		}
+	}
+	resource.Plugins = patterns
+	return resource, nil
 }
 
 func resourceFileDestination(
