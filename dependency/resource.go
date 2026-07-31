@@ -21,6 +21,9 @@ const (
 	maxResourceDownload = 1 << 30
 	maxResourceFiles    = 4096
 	maxResourceBytes    = 1 << 30
+	resourceFormatFile  = "file"
+	resourceFormatZIP   = "zip"
+	resourceFormatTar   = "tar.gz"
 )
 
 // ResourceDownloader fetches a locked resource.
@@ -73,11 +76,11 @@ func FetchResource(
 	}
 
 	switch resource.Archive {
-	case "file":
+	case resourceFormatFile:
 		return readRawResource(data, resource)
-	case "zip":
+	case resourceFormatZIP:
 		return readZipResource(data, resource)
-	case "tar.gz":
+	case resourceFormatTar:
 		return readTarResource(data, resource)
 	default:
 		return nil, fmt.Errorf("dependency: unsupported resource archive %q", resource.Archive)

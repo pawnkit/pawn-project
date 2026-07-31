@@ -16,6 +16,8 @@ whole payload if installation fails.
 of its locked resources together.
 `lockfile.MarshalSampctlResources` updates the resource extension without
 rewriting dependency commits.
+`dependency.ResolveResourceRecord` inspects a selected release asset and
+records the exact files that PawnKit will install.
 
 ## Use it in Go
 

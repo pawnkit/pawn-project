@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.0 - 2026-07-31
+
+### Added
+
+- Inspect selected release assets into complete RFC 0021 lock records.
+
 ## 0.13.0 - 2026-07-31
 
 ### Added
