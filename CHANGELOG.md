@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.0 - 2026-07-31
+
+- Select deterministic tags from sampctl-compatible version ranges.
+
 ## 0.25.0 - 2026-07-31
 
 - Cache exact dependency checkouts across projects.
