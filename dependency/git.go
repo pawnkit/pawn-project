@@ -26,7 +26,7 @@ type GitInstaller struct {
 	runner   gitRunner
 }
 
-// Install clones pkg into target without replacing an existing checkout.
+// Install restores pkg at its locked commit.
 func (g GitInstaller) Install(
 	ctx context.Context,
 	pkg lockfile.Package,
@@ -54,11 +54,18 @@ func (g GitInstaller) Install(
 		runner = execGitRunner{}
 	}
 
+	targetExists := false
 	if _, err := os.Lstat(target); err == nil {
 		if err := validateCheckoutDirectory(target); err != nil {
 			return "", err
 		}
-		return verifyExistingCheckout(ctx, runner, command, pkg, target)
+		if status, err := verifyExistingCheckout(ctx, runner, command, pkg, target); err == nil {
+			return status, nil
+		}
+		if err := validateReplaceableCheckout(ctx, runner, command, pkg, target); err != nil {
+			return "", err
+		}
+		targetExists = true
 	} else if !errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("dependency: checking %q: %w", target, err)
 	}
@@ -70,6 +77,9 @@ func (g GitInstaller) Install(
 			return "", err
 		}
 		source = cached
+	}
+	if targetExists {
+		return replaceCheckout(ctx, runner, command, pkg, source, target)
 	}
 	return installCheckout(ctx, runner, command, pkg, source, target)
 }
@@ -171,6 +181,61 @@ func verifyExistingCheckout(
 		return "", err
 	}
 	return StatusPresent, nil
+}
+
+func validateReplaceableCheckout(
+	ctx context.Context,
+	runner gitRunner,
+	command string,
+	pkg lockfile.Package,
+	target string,
+) error {
+	revision, err := runner.Run(ctx, command, "-C", target, "rev-parse", "HEAD")
+	if err != nil {
+		return fmt.Errorf("dependency: existing path %q is not a Git checkout: %w", target, err)
+	}
+	if strings.TrimSpace(revision) == pkg.Commit {
+		return fmt.Errorf("dependency: existing checkout %q failed integrity verification", target)
+	}
+	status, err := runner.Run(ctx, command, "-C", target, "status", "--porcelain", "--untracked-files=all")
+	if err != nil {
+		return fmt.Errorf("dependency: checking %q status: %w", target, err)
+	}
+	if strings.TrimSpace(status) != "" {
+		return fmt.Errorf("dependency: existing checkout %q has local changes", target)
+	}
+	return nil
+}
+
+func replaceCheckout(
+	ctx context.Context,
+	runner gitRunner,
+	command string,
+	pkg lockfile.Package,
+	source,
+	target string,
+) (status Status, err error) {
+	parent := filepath.Dir(target)
+	backup, err := os.MkdirTemp(parent, ".pawnkit-replace-")
+	if err != nil {
+		return "", fmt.Errorf("dependency: creating replacement backup: %w", err)
+	}
+	if err := os.Remove(backup); err != nil {
+		return "", fmt.Errorf("dependency: preparing replacement backup: %w", err)
+	}
+	if err := os.Rename(target, backup); err != nil {
+		return "", fmt.Errorf("dependency: preserving existing checkout: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			_ = os.RemoveAll(target)
+			_ = os.Rename(backup, target)
+			return
+		}
+		_ = os.RemoveAll(backup)
+	}()
+
+	return installCheckout(ctx, runner, command, pkg, source, target)
 }
 
 func installCheckout(

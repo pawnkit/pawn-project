@@ -63,6 +63,8 @@ func TestLimitedBuffer(t *testing.T) {
 
 type fakeGitRunner struct {
 	commit      string
+	existing    string
+	existingAt  string
 	cloneSource []string
 }
 
@@ -75,12 +77,42 @@ func (r *fakeGitRunner) Run(_ context.Context, _ string, args ...string) (string
 		return "", nil
 	}
 	if len(args) > 0 && args[len(args)-1] == "HEAD" {
+		if len(args) > 2 && args[1] == r.existingAt {
+			return r.existing + "\n", nil
+		}
 		return r.commit + "\n", nil
 	}
 	if strings.HasSuffix(args[len(args)-1], "^{commit}") {
 		return r.commit + "\n", nil
 	}
 	return "", nil
+}
+
+func TestGitInstallerReplacesCleanOutdatedCheckout(t *testing.T) {
+	root := t.TempDir()
+	target := filepath.Join(root, "dependencies", "example")
+	if err := os.MkdirAll(target, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	commit := strings.Repeat("a", 40)
+	runner := &fakeGitRunner{
+		commit: commit, existing: strings.Repeat("b", 40), existingAt: target,
+	}
+	pkg := lockfile.Package{
+		Name: "owner/example", Commit: commit,
+		Source: lockfile.PackageSource{Type: lockfile.SourceTypeGit, URL: "https://github.com/owner/example"},
+	}
+
+	status, err := (GitInstaller{runner: runner}).Install(context.Background(), pkg, target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status != StatusInstalled {
+		t.Fatalf("status = %q, want %q", status, StatusInstalled)
+	}
+	if info, err := os.Stat(target); err != nil || !info.IsDir() {
+		t.Fatalf("replacement was not installed: %v", err)
+	}
 }
 
 func TestGitInstallerStagesExactCommit(t *testing.T) {
