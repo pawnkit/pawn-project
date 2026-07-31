@@ -87,6 +87,31 @@ func TestMarshalSampctlResourcesValidatesUpdate(t *testing.T) {
 	}
 }
 
+func TestMarshalSampctlResourcesAcceptsExactDependencyKey(t *testing.T) {
+	source := []byte(`{
+		"version": 1,
+		"dependencies": {
+			"github.com/owner/plugin": {
+				"resolved": "v1",
+				"commit": "abcdef0",
+				"user": "owner",
+				"repo": "plugin"
+			}
+		}
+	}`)
+	lock := &Lock{SchemaVersion: 1, Packages: []Package{{
+		Key: "github.com/owner/plugin", Name: "owner/plugin",
+		Commit: "abcdef0", Kind: KindDependency,
+		Source: PackageSource{Type: SourceTypeGit, URL: "https://github.com/owner/plugin"},
+	}}}
+	resource := validWriteResource()
+	resource.Package = "github.com/owner/plugin"
+
+	if _, err := MarshalSampctlResources(source, lock, []ResolvedResource{resource}); err != nil {
+		t.Fatalf("MarshalSampctlResources: %v", err)
+	}
+}
+
 func validWriteResource() ResolvedResource {
 	checksum := "sha256:" + strings.Repeat("a", 64)
 	return ResolvedResource{

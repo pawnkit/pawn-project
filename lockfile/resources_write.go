@@ -81,9 +81,12 @@ func validateResourceUpdate(
 ) error {
 	candidate := *lock
 	candidate.Resources = resources
-	packages := make(map[string]bool, len(candidate.Packages))
+	packages := make(map[string]bool, len(candidate.Packages)*2)
 	for _, pkg := range candidate.Packages {
 		packages[pkg.Name] = true
+		if pkg.Key != "" {
+			packages[pkg.Key] = true
+		}
 	}
 	registry := source.NewRegistry()
 	validator := &validator{

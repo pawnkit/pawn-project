@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.1 - 2026-07-31
+
+- Preserve exact dependency keys while validating resource lock updates.
+
 ## 0.17.0 - 2026-07-31
 
 - Select the first release asset matching a sampctl resource pattern.
