@@ -40,7 +40,7 @@ RFC 0003 migration window.
 | `dependencies` | Yes, including constraints, revisions, integrity, schemes, local paths, and reverse edges |
 | `runtime` | Runtime type is exposed as the normalized runtime profile |
 | `build` | Compiler version and preset are exposed through the normalized compiler |
-| `pawnkit.resources` | Experimental RFC 0021 records are decoded, validated, downloaded, and verified; filesystem installation is not implemented yet |
+| `pawnkit.resources` | Experimental RFC 0021 records are decoded, validated, downloaded, verified, and installed as a staged transaction |
 | Earlier `schemaVersion` / `packages` draft | Read-only compatibility through 2027-07-30 |
 
 ## Dependency restore
@@ -53,7 +53,8 @@ All remote schemes use the same source checkout layout. RFC 0021 resource
 records are checked for exact package keys, target coordinates, HTTPS URLs,
 checksums, bounded sizes, and safe destination paths. ZIP, tar.gz, and raw
 assets can be downloaded and verified in memory. Filesystem installation is
-not implemented yet.
+staged below `.pawnkit` and rolled back as one payload when a write fails.
+Dependency-wide resource resolution and orchestration remain to be implemented.
 
 ## Toolchain manager
 

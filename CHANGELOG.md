@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.0 - 2026-07-31
+
+### Added
+
+- Install verified resource payloads with staged writes and rollback.
+
 ## 0.9.0 - 2026-07-31
 
 ### Added

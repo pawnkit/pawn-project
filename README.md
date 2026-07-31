@@ -10,6 +10,8 @@ The `dependency` package restores dependency sources at the exact Git commits
 recorded in `pawn.lock`. The lockfile reader also validates experimental RFC
 0021 resource records. `dependency.FetchResource` downloads a locked asset,
 checks its archive and file hashes, and returns only the declared files.
+`dependency.InstallResourcePayload` stages those files and rolls back the
+whole payload if installation fails.
 
 ## Use it in Go
 
