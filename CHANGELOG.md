@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.34.0 - 2026-07-31
+
+- Resolve and restore guarded package dependency cycles.
+
 ## 0.33.1 - 2026-07-31
 
 - Accept branch dependency references containing slashes.

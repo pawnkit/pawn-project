@@ -3,6 +3,7 @@ package dependency
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
@@ -370,9 +371,14 @@ func TestGraphResolverRejectsConflictsAndCycles(t *testing.T) {
 			},
 			locked: map[string]bool{},
 		}
-		_, err := NewGraphResolver(provider).Resolve(context.Background(), root, nil)
-		if err == nil || !strings.Contains(err.Error(), "cycle detected") {
-			t.Fatalf("Resolve error = %v", err)
+		packages, err := NewGraphResolver(provider).Resolve(context.Background(), root, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		a := packageByKey(t, packages, "github.com/owner/a")
+		b := packageByKey(t, packages, "github.com/owner/b")
+		if !slices.Equal(a.Dependencies, []string{"owner/b"}) || !slices.Equal(b.Dependencies, []string{"owner/a"}) {
+			t.Fatalf("cycle edges = a:%v b:%v", a.Dependencies, b.Dependencies)
 		}
 	})
 }

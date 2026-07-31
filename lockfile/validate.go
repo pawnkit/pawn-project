@@ -84,7 +84,6 @@ func (v *validator) run() {
 	}
 
 	v.checkEdges(seen)
-	v.checkCycles()
 	v.checkResources(resourcePackages)
 }
 
@@ -294,68 +293,6 @@ func (v *validator) checkEdges(known map[string]bool) {
 			if !known[dep] {
 				v.add(CodeUnknownDependencyEdge, diagnostic.SeverityError,
 					"packages[%d] (%s): dependency edge to unknown package %q", i, p.Name, dep)
-			}
-		}
-	}
-}
-
-// checkCycles detects cycles in the resolved dependency graph without
-// panicking or infinite-looping on malicious/malformed input.
-func (v *validator) checkCycles() {
-	const (
-		white = 0
-		gray  = 1
-		black = 2
-	)
-
-	byName := make(map[string]Package, len(v.l.Packages))
-	for _, p := range v.l.Packages {
-		byName[p.Name] = p
-	}
-
-	state := make(map[string]int, len(v.l.Packages))
-
-	var visit func(name string, path []string) []string
-
-	visit = func(name string, path []string) []string {
-		if state[name] == black {
-			return nil
-		}
-
-		if state[name] == gray {
-			return append(path, name)
-		}
-
-		state[name] = gray
-		path = append(path, name)
-
-		for _, dep := range byName[name].Dependencies {
-			if _, ok := byName[dep]; !ok {
-				continue // already reported by checkEdges
-			}
-
-			if cyc := visit(dep, path); cyc != nil {
-				return cyc
-			}
-		}
-
-		state[name] = black
-
-		return nil
-	}
-
-	reported := make(map[string]bool)
-
-	for _, p := range v.l.Packages {
-		if state[p.Name] != white {
-			continue
-		}
-
-		if cyc := visit(p.Name, nil); cyc != nil {
-			key := fmt.Sprint(cyc)
-			if !reported[key] {
-				v.add(CodeDependencyCycle, diagnostic.SeverityError, "dependency cycle detected: %v", cyc)
-				reported[key] = true
 			}
 		}
 	}

@@ -179,7 +179,7 @@ func orderedPackages(lock *lockfile.Lock) ([]lockfile.Package, error) {
 			return nil
 		}
 		if visiting[name] {
-			return fmt.Errorf("dependency: cycle contains %s", name)
+			return nil
 		}
 		pkg, ok := byName[name]
 		if !ok {

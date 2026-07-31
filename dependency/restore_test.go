@@ -50,6 +50,30 @@ func TestRestoreOrdersDependenciesAndUsesSampctlPaths(t *testing.T) {
 	}
 }
 
+func TestRestoreAcceptsDependencyCycle(t *testing.T) {
+	mem := fsx.NewMem()
+	installer := &recordingInstaller{}
+	lock := &lockfile.Lock{Packages: []lockfile.Package{
+		{
+			Name: "owner/a", Commit: "abc", Kind: lockfile.KindDependency,
+			Source:       lockfile.PackageSource{Type: lockfile.SourceTypeGit, URL: "https://example.com/a"},
+			Dependencies: []string{"owner/b"},
+		},
+		{
+			Name: "owner/b", Commit: "def", Kind: lockfile.KindDependency,
+			Source:       lockfile.PackageSource{Type: lockfile.SourceTypeGit, URL: "https://example.com/b"},
+			Dependencies: []string{"owner/a"},
+		},
+	}}
+
+	if _, err := NewRestorer(mem, installer).Restore(context.Background(), "/project", lock); err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{"owner/b", "owner/a"}; !reflect.DeepEqual(installer.names, want) {
+		t.Fatalf("install order = %v, want %v", installer.names, want)
+	}
+}
+
 func TestRestoreAcceptsExistingLocalDependency(t *testing.T) {
 	mem := fsx.NewMem()
 	mem.AddFile("/project/vendor/include/example.inc", nil)

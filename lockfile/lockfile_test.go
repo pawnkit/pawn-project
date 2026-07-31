@@ -431,7 +431,7 @@ func TestLoad_UnknownDependencyEdge(t *testing.T) {
 	assertHasCode(t, res.Diagnostics, CodeUnknownDependencyEdge)
 }
 
-func TestLoad_DependencyCycle(t *testing.T) {
+func TestLoad_AcceptsDependencyCycle(t *testing.T) {
 	m := fsx.NewMem()
 	m.AddFile("/proj/pawn.lock", []byte(`{
 		"schemaVersion": 1,
@@ -446,7 +446,9 @@ func TestLoad_DependencyCycle(t *testing.T) {
 		t.Fatalf("Load: %v", err)
 	}
 
-	assertHasCode(t, res.Diagnostics, CodeDependencyCycle)
+	if len(res.Diagnostics) != 0 {
+		t.Fatalf("diagnostics = %+v", res.Diagnostics)
+	}
 }
 
 func TestLoad_PlatformArtifactPathTraversal(t *testing.T) {

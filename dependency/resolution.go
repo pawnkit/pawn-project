@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"slices"
 	"sort"
-	"strings"
 
 	"github.com/pawnkit/pawn-project/lockfile"
 	"github.com/pawnkit/pawn-project/manifest"
@@ -141,10 +140,6 @@ func (r *GraphResolver) ResolveWithOptions( //nolint:gocyclo,funlen // Graph tra
 
 		if len(request.ancestry) > maxResolutionDepth {
 			return nil, fmt.Errorf("dependency: graph exceeds %d levels at %s", maxResolutionDepth, key)
-		}
-		if cycleStart := indexOf(request.ancestry, key); cycleStart >= 0 {
-			cycle := append(append([]string(nil), request.ancestry[cycleStart:]...), key)
-			return nil, fmt.Errorf("dependency: cycle detected: %s", strings.Join(cycle, " -> "))
 		}
 		if canonicalKey, ok := canonicalKeys[dependencyCanonicalID(request.dependency)]; ok {
 			if previous := constraints[canonicalKey]; constraintsConflict(
@@ -419,13 +414,4 @@ func dependencyBranch(dependency manifest.Dependency) string {
 		return dependency.Ref
 	}
 	return ""
-}
-
-func indexOf(values []string, value string) int {
-	for i, current := range values {
-		if current == value {
-			return i
-		}
-	}
-	return -1
 }
