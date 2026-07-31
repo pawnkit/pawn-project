@@ -87,6 +87,16 @@ func TestLoadGitRevisionManifestRejectsOversizedFile(t *testing.T) {
 	}
 }
 
+func TestLoadGitRevisionManifestAllowsLeafPackage(t *testing.T) {
+	packageManifest, err := loadGitRevisionManifest(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(packageManifest.Dependencies) != 0 {
+		t.Fatalf("dependencies = %v", packageManifest.Dependencies)
+	}
+}
+
 func TestValidGitCheckoutRef(t *testing.T) {
 	for ref, want := range map[string]bool{
 		gitHead:                 true,

@@ -164,5 +164,5 @@ func loadGitRevisionManifest(checkout string) (*manifest.Manifest, error) {
 		}
 		return result.Manifest, nil
 	}
-	return nil, errors.New("dependency: package has no pawn.json, pawn.yaml, or pawn.yml")
+	return &manifest.Manifest{}, nil
 }

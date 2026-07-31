@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.29.0 - 2026-07-31
+
+- Resolve leaf dependency repositories that have no package manifest.
+
 ## 0.28.0 - 2026-07-31
 
 - Resolve HTTPS-hosted dependencies through a bounded Git checkout.
