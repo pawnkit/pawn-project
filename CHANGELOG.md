@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.15.0 - 2026-07-31
+
+### Added
+
+- Resolve every restored resource package for one host target.
+
 ## 0.14.0 - 2026-07-31
 
 ### Added

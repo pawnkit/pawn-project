@@ -58,8 +58,8 @@ All locked records for an exact host target are verified before that payload
 is installed. PawnKit can update the namespaced resource set without changing
 sampctl dependency data. Manifest selection follows sampctl's exact-version,
 then platform-default precedence. ZIP, tar.gz, and single-file assets are
-inspected into complete lock records. Release-provider orchestration remains
-to be implemented.
+inspected into complete lock records. Resolution loads restored package
+manifests and leaves release-provider transport to the caller.
 
 ## Toolchain manager
 

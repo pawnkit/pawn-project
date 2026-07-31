@@ -18,6 +18,8 @@ of its locked resources together.
 rewriting dependency commits.
 `dependency.ResolveResourceRecord` inspects a selected release asset and
 records the exact files that PawnKit will install.
+`dependency.ResourceResolver` applies that process to every resource package
+while preserving records for other host targets.
 
 ## Use it in Go
 
