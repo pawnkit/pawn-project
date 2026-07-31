@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.31.0 - 2026-07-31
+
+- Prefer direct dependency constraints over transitive requests.
+
 ## 0.30.0 - 2026-07-31
 
 - Let direct dependency pins override unqualified transitive references.

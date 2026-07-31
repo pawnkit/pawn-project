@@ -79,7 +79,7 @@ func TestGraphResolverBuildsTransitiveGraph(t *testing.T) {
 	}
 }
 
-func TestGraphResolverPrefersDirectConstraintOverUnqualifiedTransitive(t *testing.T) {
+func TestGraphResolverPrefersDirectConstraintOverTransitive(t *testing.T) {
 	root := &manifest.Manifest{Dependencies: []manifest.Dependency{
 		mustDependency(t, "owner/a#"+commitA),
 		mustDependency(t, "owner/b:v1"),
@@ -90,7 +90,7 @@ func TestGraphResolverPrefersDirectConstraintOverUnqualifiedTransitive(t *testin
 			"github.com/owner/b": {
 				Commit: commitB, Resolved: "v1",
 				Manifest: manifest.Manifest{Dependencies: []manifest.Dependency{
-					mustDependency(t, "owner/a"),
+					mustDependency(t, "owner/a:v2"),
 				}},
 			},
 		},
@@ -250,18 +250,24 @@ func TestLockNeedsResolutionChecksDependencyKind(t *testing.T) {
 func TestGraphResolverRejectsConflictsAndCycles(t *testing.T) {
 	t.Run("conflict", func(t *testing.T) {
 		root := &manifest.Manifest{Dependencies: []manifest.Dependency{
-			mustDependency(t, "owner/a:v1"),
 			mustDependency(t, "owner/b:v1"),
+			mustDependency(t, "owner/c:v1"),
 		}}
 		provider := &graphRevisionProvider{
 			revisions: map[string]Revision{
-				"github.com/owner/a": {Commit: commitA, Resolved: "v1"},
 				"github.com/owner/b": {
 					Commit: commitB, Resolved: "v1",
+					Manifest: manifest.Manifest{Dependencies: []manifest.Dependency{
+						mustDependency(t, "owner/a:v1"),
+					}},
+				},
+				"github.com/owner/c": {
+					Commit: commitD, Resolved: "v1",
 					Manifest: manifest.Manifest{Dependencies: []manifest.Dependency{
 						mustDependency(t, "owner/a:v2"),
 					}},
 				},
+				"github.com/owner/a": {Commit: commitA, Resolved: "v1"},
 			},
 			locked: map[string]bool{},
 		}

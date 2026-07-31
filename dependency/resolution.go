@@ -229,7 +229,7 @@ func constraintsConflict(
 	if previous == current {
 		return false
 	}
-	return previous != "" && current != "" || pkg == nil || pkg.Transitive || request.direct
+	return pkg == nil || pkg.Transitive || request.direct
 }
 
 func sortedResolvedPackages(packages map[string]*lockfile.Package) []lockfile.Package {
