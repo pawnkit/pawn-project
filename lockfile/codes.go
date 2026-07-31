@@ -18,6 +18,10 @@ const (
 	CodeUnknownDependencyEdge  = "pawn-project:lockfile-unknown-dependency-edge"
 	CodeDependencyCycle        = "pawn-project:lockfile-dependency-cycle"
 	CodePathTraversal          = "pawn-project:lockfile-path-traversal"
+	CodeResourceSchemaInvalid  = "pawn-project:lockfile-resource-schema-unsupported"
+	CodeInvalidResource        = "pawn-project:lockfile-invalid-resource"
+	CodeDuplicateResource      = "pawn-project:lockfile-duplicate-resource"
+	CodeUnknownResourcePackage = "pawn-project:lockfile-unknown-resource-package"
 )
 
 // Source is the diagnostic.Source value used for every diagnostic this

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0 - 2026-07-31
+
+### Added
+
+- Decode and validate experimental RFC 0021 package resource records.
+
 ## 0.7.0 - 2026-07-31
 
 ### Added

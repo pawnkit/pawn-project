@@ -118,6 +118,125 @@ func TestLoad_SampctlRejectsUnknownReverseEdgeAndUnsafeLocalPath(t *testing.T) {
 	assertHasCode(t, res.Diagnostics, CodeUnknownDependencyEdge)
 }
 
+func TestLoad_SampctlResolvedResources(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/pawn.lock", []byte(`{
+		"version": 1,
+		"generated": "2026-07-31T08:00:00Z",
+		"sampctl_version": "1.14.1",
+		"dependencies": {
+			"plugin://owner/package": {
+				"constraint": "1.0.0",
+				"resolved": "1.0.0",
+				"commit": "abcdef1",
+				"user": "owner",
+				"repo": "package",
+				"scheme": "plugin"
+			}
+		},
+		"pawnkit": {
+			"schema_version": 1,
+			"resources": [{
+				"package": "plugin://owner/package",
+				"resource": "plugin.zip",
+				"target": "linux-amd64",
+				"url": "https://example.com/plugin.zip",
+				"size": 1234,
+				"checksum": "sha256:`+hex64+`",
+				"archive": "zip",
+				"files": [{
+					"source": "plugin.so",
+					"destination": "plugins/plugin.so",
+					"size": 456,
+					"checksum": "sha256:`+hex64+`"
+				}]
+			}]
+		}
+	}`))
+
+	res, err := Load(source.NewRegistry(), m, "/proj/pawn.lock")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	for _, d := range res.Diagnostics {
+		t.Errorf("unexpected diagnostic: [%s] %s", d.Code, d.Message)
+	}
+	if len(res.Lock.Resources) != 1 {
+		t.Fatalf("resources = %d, want 1", len(res.Lock.Resources))
+	}
+	resource := res.Lock.Resources[0]
+	if resource.Target != "linux-amd64" || resource.Files[0].Destination != "plugins/plugin.so" {
+		t.Fatalf("resource = %+v", resource)
+	}
+}
+
+func TestLoad_SampctlRejectsUnsafeResolvedResources(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/pawn.lock", []byte(`{
+		"version": 1,
+		"generated": "2026-07-31T08:00:00Z",
+		"sampctl_version": "1.14.1",
+		"dependencies": {},
+		"pawnkit": {
+			"schema_version": 2,
+			"resources": [
+				{
+					"package": "plugin://owner/package",
+					"resource": "plugin.zip",
+					"target": "linux",
+					"url": "https://token@example.com/plugin.zip",
+					"size": 0,
+					"checksum": "bad",
+					"archive": "rar",
+					"files": [
+						{"source": "../plugin.so", "destination": "plugins/Plugin.so", "size": -1, "checksum": "bad"},
+						{"source": "plugin.so", "destination": "plugins/plugin.so", "size": 1, "checksum": "bad"}
+					]
+				},
+				{
+					"package": "plugin://owner/package",
+					"resource": "plugin.zip",
+					"target": "linux",
+					"url": "https://example.com/plugin.zip",
+					"size": 1,
+					"checksum": "sha256:`+hex64+`",
+					"archive": "zip",
+					"files": [
+						{"source": "a", "destination": "a", "size": 600000000, "checksum": "sha256:`+hex64+`"},
+						{"source": "b", "destination": "b", "size": 600000000, "checksum": "sha256:`+hex64+`"}
+					]
+				},
+				{
+					"package": "plugin://owner/package",
+					"resource": "plugin.so",
+					"target": "linux-amd64",
+					"url": "https://example.com/plugin.so",
+					"size": 1,
+					"checksum": "sha256:`+hex64+`",
+					"archive": "file",
+					"files": [
+						{"source": "a", "destination": "a", "size": 1, "checksum": "sha256:`+hex64+`"},
+						{"source": "b", "destination": "b", "size": 1, "checksum": "sha256:`+hex64+`"}
+					]
+				}
+			]
+		}
+	}`))
+
+	res, err := Load(source.NewRegistry(), m, "/proj/pawn.lock")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	assertHasCode(t, res.Diagnostics, CodeResourceSchemaInvalid)
+	assertHasCode(t, res.Diagnostics, CodeUnknownResourcePackage)
+	assertHasCode(t, res.Diagnostics, CodeInvalidResource)
+	assertHasCode(t, res.Diagnostics, CodeInvalidChecksum)
+	assertHasCode(t, res.Diagnostics, CodePathTraversal)
+	assertHasCode(t, res.Diagnostics, CodeDuplicateResource)
+	assertMessageContains(t, res.Diagnostics, "extracted files exceed 1 GiB")
+	assertMessageContains(t, res.Diagnostics, "file resources require exactly one file")
+}
+
 func TestLoad_MalformedJSON(t *testing.T) {
 	m := fsx.NewMem()
 	m.AddFile("/proj/pawn.lock", []byte(`{"schemaVersion": 1, "packages": [`))
@@ -313,4 +432,14 @@ func assertHasCode(t *testing.T, diags []diagnostic.Diagnostic, code string) dia
 	t.Fatalf("no diagnostic with code %s found in %+v", code, diags)
 
 	return diagnostic.Diagnostic{}
+}
+
+func assertMessageContains(t *testing.T, diags []diagnostic.Diagnostic, want string) {
+	t.Helper()
+	for _, d := range diags {
+		if strings.Contains(d.Message, want) {
+			return
+		}
+	}
+	t.Fatalf("no diagnostic contains %q in %+v", want, diags)
 }

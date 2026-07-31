@@ -22,6 +22,12 @@ type sampctlLock struct {
 	Dependencies   map[string]sampctlDependency `json:"dependencies"`
 	Runtime        *sampctlRuntime              `json:"runtime,omitempty"`
 	Build          *sampctlBuild                `json:"build,omitempty"`
+	PawnKit        *sampctlPawnKit              `json:"pawnkit,omitempty"`
+}
+
+type sampctlPawnKit struct {
+	SchemaVersion int                `json:"schema_version"`
+	Resources     []ResolvedResource `json:"resources"`
 }
 
 type sampctlDependency struct {
@@ -78,6 +84,24 @@ func decodeSampctl(
 	linkSampctlDependencies(sourceLock.Dependencies, keys, packages, namesByKey, indexByName, sink)
 
 	lock := Lock{SchemaVersion: 1, GeneratedAt: sourceLock.Generated, Packages: packages}
+	if sourceLock.PawnKit != nil {
+		if sourceLock.PawnKit.SchemaVersion != 1 {
+			sink.add(CodeResourceSchemaInvalid, fmt.Sprintf(
+				"pawnkit resource schema version %d is not supported",
+				sourceLock.PawnKit.SchemaVersion,
+			))
+		}
+		lock.Resources = sourceLock.PawnKit.Resources
+		for i, resource := range lock.Resources {
+			if _, ok := sourceLock.Dependencies[resource.Package]; !ok {
+				sink.add(CodeUnknownResourcePackage, fmt.Sprintf(
+					"resources[%d]: package %q does not match a dependency key",
+					i,
+					resource.Package,
+				))
+			}
+		}
+	}
 	if sourceLock.Build != nil && sourceLock.Build.CompilerVersion != "" {
 		lock.Compiler = &Compiler{
 			Vendor:  compilerVendor(sourceLock.Build.CompilerPreset),

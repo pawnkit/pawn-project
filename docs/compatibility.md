@@ -40,6 +40,7 @@ RFC 0003 migration window.
 | `dependencies` | Yes, including constraints, revisions, integrity, schemes, local paths, and reverse edges |
 | `runtime` | Runtime type is exposed as the normalized runtime profile |
 | `build` | Compiler version and preset are exposed through the normalized compiler |
+| `pawnkit.resources` | Experimental RFC 0021 records are decoded and validated; installation is not implemented yet |
 | Earlier `schemaVersion` / `packages` draft | Read-only compatibility through 2027-07-30 |
 
 ## Dependency restore
@@ -48,9 +49,10 @@ RFC 0003 migration window.
 `pawn.lock`. Existing checkouts must already match that commit. Local paths are
 checked but not copied.
 
-All remote schemes use the same source checkout layout. Plugin and component
-binaries still need sampctl because their resource extraction layout is not
-yet part of RFC 0003.
+All remote schemes use the same source checkout layout. RFC 0021 resource
+records are checked for exact package keys, target coordinates, HTTPS URLs,
+checksums, bounded sizes, and safe destination paths. Download and extraction
+are not implemented yet.
 
 ## Toolchain manager
 

@@ -3,15 +3,36 @@ package lockfile
 
 // Lock is the decoded, validated form of a pawn.lock file.
 type Lock struct {
-	SchemaVersion    int       `json:"schemaVersion"`
-	GeneratedAt      string    `json:"generatedAt,omitempty"`
-	ManifestChecksum string    `json:"manifestChecksum,omitempty"`
-	Compiler         *Compiler `json:"compiler,omitempty"`
-	RuntimeProfile   string    `json:"runtimeProfile,omitempty"`
-	Packages         []Package `json:"packages"`
+	SchemaVersion    int                `json:"schemaVersion"`
+	GeneratedAt      string             `json:"generatedAt,omitempty"`
+	ManifestChecksum string             `json:"manifestChecksum,omitempty"`
+	Compiler         *Compiler          `json:"compiler,omitempty"`
+	RuntimeProfile   string             `json:"runtimeProfile,omitempty"`
+	Packages         []Package          `json:"packages"`
+	Resources        []ResolvedResource `json:"resources,omitempty"`
 
 	// SourcePath is the absolute path this Lock was loaded from.
 	SourcePath string `json:"-"`
+}
+
+// ResolvedResource is a verified package asset for one host target.
+type ResolvedResource struct {
+	Package  string                 `json:"package"`
+	Resource string                 `json:"resource"`
+	Target   string                 `json:"target"`
+	URL      string                 `json:"url"`
+	Size     int64                  `json:"size"`
+	Checksum string                 `json:"checksum"`
+	Archive  string                 `json:"archive"`
+	Files    []ResolvedResourceFile `json:"files"`
+}
+
+// ResolvedResourceFile is one file installed from a resource.
+type ResolvedResourceFile struct {
+	Source      string `json:"source"`
+	Destination string `json:"destination"`
+	Size        int64  `json:"size"`
+	Checksum    string `json:"checksum"`
 }
 
 // Compiler mirrors the schema's "compiler" object.
