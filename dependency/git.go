@@ -3,6 +3,8 @@ package dependency
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -19,8 +21,9 @@ const maxGitOutput = 1024 * 1024
 
 // GitInstaller restores Git dependencies at their locked commits.
 type GitInstaller struct {
-	Command string
-	runner  gitRunner
+	Command  string
+	CacheDir string
+	runner   gitRunner
 }
 
 // Install clones pkg into target without replacing an existing checkout.
@@ -38,6 +41,9 @@ func (g GitInstaller) Install(
 	if pkg.Commit == "" {
 		return "", errors.New("dependency: locked commit is required")
 	}
+	if !validGitCommit(pkg.Commit) {
+		return "", errors.New("dependency: locked commit is invalid")
+	}
 
 	command := g.Command
 	if command == "" {
@@ -48,13 +54,90 @@ func (g GitInstaller) Install(
 		runner = execGitRunner{}
 	}
 
-	if _, err := os.Stat(target); err == nil {
+	if _, err := os.Lstat(target); err == nil {
+		if err := validateCheckoutDirectory(target); err != nil {
+			return "", err
+		}
 		return verifyExistingCheckout(ctx, runner, command, pkg, target)
 	} else if !errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("dependency: checking %q: %w", target, err)
 	}
 
-	return installCheckout(ctx, runner, command, pkg, target)
+	source := pkg.Source.URL
+	if g.CacheDir != "" {
+		cached, err := ensureCachedCheckout(ctx, runner, command, g.CacheDir, pkg)
+		if err != nil {
+			return "", err
+		}
+		source = cached
+	}
+	return installCheckout(ctx, runner, command, pkg, source, target)
+}
+
+// DefaultDependencyCacheDir returns the shared dependency cache directory.
+func DefaultDependencyCacheDir() (string, error) {
+	base, err := os.UserCacheDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(base, "pawnkit", "pawn-project", "dependencies"), nil
+}
+
+func ensureCachedCheckout(
+	ctx context.Context,
+	runner gitRunner,
+	command, cacheDir string,
+	pkg lockfile.Package,
+) (string, error) {
+	digest := sha256.Sum256([]byte(pkg.Source.URL))
+	cache := filepath.Join(cacheDir, hex.EncodeToString(digest[:]), pkg.Commit)
+	if _, err := os.Lstat(cache); err == nil {
+		if err := validateCheckoutDirectory(cache); err != nil {
+			return "", err
+		}
+		if _, err := verifyExistingCheckout(ctx, runner, command, pkg, cache); err != nil {
+			return "", fmt.Errorf("dependency: cached checkout is invalid: %w", err)
+		}
+		return cache, nil
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return "", fmt.Errorf("dependency: checking cache %q: %w", cache, err)
+	}
+
+	if _, err := installCheckout(ctx, runner, command, pkg, pkg.Source.URL, cache); err != nil {
+		if _, statErr := os.Lstat(cache); statErr != nil {
+			return "", fmt.Errorf("dependency: caching %s: %w", pkg.Name, err)
+		}
+		if verifyErr := validateCheckoutDirectory(cache); verifyErr != nil {
+			return "", verifyErr
+		}
+		if _, verifyErr := verifyExistingCheckout(ctx, runner, command, pkg, cache); verifyErr != nil {
+			return "", fmt.Errorf("dependency: caching %s: %w", pkg.Name, err)
+		}
+	}
+	return cache, nil
+}
+
+func validateCheckoutDirectory(path string) error {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return fmt.Errorf("dependency: checking %q: %w", path, err)
+	}
+	if info.Mode()&fs.ModeSymlink != 0 || !info.IsDir() {
+		return fmt.Errorf("dependency: checkout path %q is not a directory", path)
+	}
+	return nil
+}
+
+func validGitCommit(commit string) bool {
+	if len(commit) < 7 || len(commit) > 40 {
+		return false
+	}
+	for _, char := range commit {
+		if !strings.ContainsRune("0123456789abcdef", char) {
+			return false
+		}
+	}
+	return true
 }
 
 func verifyExistingCheckout(
@@ -95,6 +178,7 @@ func installCheckout(
 	runner gitRunner,
 	command string,
 	pkg lockfile.Package,
+	source,
 	target string,
 ) (Status, error) {
 	parent := filepath.Dir(target)
@@ -117,7 +201,7 @@ func installCheckout(
 		"clone",
 		"--no-checkout",
 		"--no-recurse-submodules",
-		pkg.Source.URL,
+		source,
 		staging,
 	); err != nil {
 		return "", fmt.Errorf("dependency: cloning %s: %w", pkg.Name, err)

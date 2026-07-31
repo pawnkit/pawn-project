@@ -32,6 +32,20 @@ func TestValidateGitSource(t *testing.T) {
 	}
 }
 
+func TestValidGitCommit(t *testing.T) {
+	for commit, want := range map[string]bool{
+		"abcdef0":               true,
+		strings.Repeat("a", 40): true,
+		"ABCDEF0":               false,
+		"../bad":                false,
+		"short":                 false,
+	} {
+		if got := validGitCommit(commit); got != want {
+			t.Errorf("validGitCommit(%q) = %t, want %t", commit, got, want)
+		}
+	}
+}
+
 func TestLimitedBuffer(t *testing.T) {
 	input := make([]byte, maxGitOutput+20)
 	buffer := &limitedBuffer{}
@@ -48,11 +62,13 @@ func TestLimitedBuffer(t *testing.T) {
 }
 
 type fakeGitRunner struct {
-	commit string
+	commit      string
+	cloneSource []string
 }
 
-func (r fakeGitRunner) Run(_ context.Context, _ string, args ...string) (string, error) {
+func (r *fakeGitRunner) Run(_ context.Context, _ string, args ...string) (string, error) {
 	if len(args) > 0 && args[0] == "clone" {
+		r.cloneSource = append(r.cloneSource, args[len(args)-2])
 		if err := os.MkdirAll(args[len(args)-1], 0o750); err != nil {
 			return "", err
 		}
@@ -71,7 +87,8 @@ func TestGitInstallerStagesExactCommit(t *testing.T) {
 	root := t.TempDir()
 	target := filepath.Join(root, "dependencies", "example")
 	commit := strings.Repeat("a", 40)
-	installer := GitInstaller{runner: fakeGitRunner{commit: commit}}
+	runner := &fakeGitRunner{commit: commit}
+	installer := GitInstaller{runner: runner}
 	pkg := lockfile.Package{
 		Name:   "owner/example",
 		Commit: commit,
@@ -98,6 +115,49 @@ func TestGitInstallerStagesExactCommit(t *testing.T) {
 	}
 	if status != StatusPresent {
 		t.Fatalf("second status = %q, want %q", status, StatusPresent)
+	}
+}
+
+func TestGitInstallerReusesPersistentCache(t *testing.T) {
+	root := t.TempDir()
+	cache := filepath.Join(root, "cache")
+	commit := strings.Repeat("a", 40)
+	runner := &fakeGitRunner{commit: commit}
+	installer := GitInstaller{CacheDir: cache, runner: runner}
+	pkg := lockfile.Package{
+		Name: "owner/example", Commit: commit,
+		Source: lockfile.PackageSource{
+			Type: lockfile.SourceTypeGit, URL: "https://github.com/owner/example",
+		},
+	}
+
+	if _, err := installer.Install(context.Background(), pkg, filepath.Join(root, "first")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := installer.Install(context.Background(), pkg, filepath.Join(root, "second")); err != nil {
+		t.Fatal(err)
+	}
+	if len(runner.cloneSource) != 3 {
+		t.Fatalf("clone sources = %v", runner.cloneSource)
+	}
+	if runner.cloneSource[0] != pkg.Source.URL || runner.cloneSource[1] == pkg.Source.URL ||
+		runner.cloneSource[2] != runner.cloneSource[1] {
+		t.Fatalf("clone sources = %v", runner.cloneSource)
+	}
+}
+
+func TestGitInstallerRejectsSymlinkTarget(t *testing.T) {
+	root := t.TempDir()
+	target := filepath.Join(root, "target")
+	if err := os.Symlink(root, target); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+	pkg := lockfile.Package{
+		Name: "owner/example", Commit: strings.Repeat("a", 40),
+		Source: lockfile.PackageSource{Type: lockfile.SourceTypeGit, URL: "https://example.com/repo"},
+	}
+	if _, err := (GitInstaller{}).Install(context.Background(), pkg, target); err == nil {
+		t.Fatal("symlink target was accepted")
 	}
 }
 

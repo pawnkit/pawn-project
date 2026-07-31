@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.25.0 - 2026-07-31
+
+- Cache exact dependency checkouts across projects.
+- Reject invalid commits and symlink checkout paths.
+
 ## 0.24.0 - 2026-07-31
 
 - Collapse provider-reported repository aliases in dependency graphs.

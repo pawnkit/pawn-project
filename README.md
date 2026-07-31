@@ -7,7 +7,8 @@
 It finds the workspace, reads `pawn.json` or `pawn.yaml`, loads `pawn.lock`, resolves include paths, and selects the requested build and runtime profile. The formatter, linter, language server, test runner, and CLI all use the same result.
 
 The `dependency` package restores dependency sources at the exact Git commits
-recorded in `pawn.lock`. The lockfile reader also validates experimental RFC
+recorded in `pawn.lock`. `GitInstaller.CacheDir` lets tools reuse verified
+checkouts across projects. The lockfile reader also validates experimental RFC
 0021 resource records. `dependency.FetchResource` downloads a locked asset,
 checks its archive and file hashes, and returns only the declared files.
 `dependency.InstallResourcePayload` stages those files and rolls back the
