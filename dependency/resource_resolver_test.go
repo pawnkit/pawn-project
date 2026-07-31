@@ -87,6 +87,44 @@ func TestResourceResolverReportsMissingManifestResources(t *testing.T) {
 	}
 }
 
+func TestResourceResolverRecognizesCompleteTarget(t *testing.T) {
+	mem := fsx.NewMem()
+	mem.AddFile("/project/dependencies/plugin/pawn.json", []byte(`{
+		"resources": [{
+			"name": "plugin.zip",
+			"platform": "linux",
+			"archive": true
+		}]
+	}`))
+	pkg := lockfile.Package{
+		Key: "github.com/owner/plugin", Name: "owner/plugin",
+		Kind:   lockfile.KindDependency,
+		Source: lockfile.PackageSource{Type: lockfile.SourceTypeGit},
+	}
+	lock := &lockfile.Lock{
+		Packages: []lockfile.Package{pkg},
+		Resources: []lockfile.ResolvedResource{{
+			Package: "github.com/owner/plugin", Resource: "plugin.zip",
+			Target: "linux-amd64",
+		}},
+	}
+	resolver := NewResourceResolver(mem, nil, nil)
+
+	complete, err := resolver.HasCompleteTarget(
+		context.Background(), "/project", "linux-amd64", "", lock,
+	)
+	if err != nil || !complete {
+		t.Fatalf("HasCompleteTarget = %v, %v", complete, err)
+	}
+	lock.Resources[0].Target = "windows-amd64"
+	complete, err = resolver.HasCompleteTarget(
+		context.Background(), "/project", "linux-amd64", "", lock,
+	)
+	if err != nil || complete {
+		t.Fatalf("HasCompleteTarget missing = %v, %v", complete, err)
+	}
+}
+
 type recordingReleaseProvider struct {
 	assets   []ReleaseAsset
 	packages []lockfile.Package

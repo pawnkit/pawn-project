@@ -40,6 +40,52 @@ func NewResourceResolver(
 	}
 }
 
+// HasCompleteTarget reports whether every declared resource is locked.
+func (r *ResourceResolver) HasCompleteTarget(
+	ctx context.Context,
+	root, target, runtimeVersion string,
+	lock *lockfile.Lock,
+) (bool, error) {
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	if lock == nil {
+		return false, errors.New("dependency: lockfile is required")
+	}
+	if r.fsys == nil {
+		return false, errors.New("dependency: resource resolver is not configured")
+	}
+	records := make(map[string]bool, len(lock.Resources))
+	for _, resource := range lock.Resources {
+		if resource.Target == target {
+			records[resource.Package+"\x00"+resource.Resource] = true
+		}
+	}
+	for _, pkg := range lock.Packages {
+		pkgManifest, found, err := r.loadResourceManifest(root, pkg)
+		if err != nil {
+			return false, fmt.Errorf("dependency: checking resources for %s: %w", pkg.Name, err)
+		}
+		if !found || len(pkgManifest.Resources) == 0 {
+			if resourcePackageKind(pkg.Kind) {
+				return false, fmt.Errorf(
+					"dependency: checking resources for %s: package manifest does not declare resources",
+					pkg.Name,
+				)
+			}
+			continue
+		}
+		selected, err := SelectManifestResource(pkgManifest.Resources, target, runtimeVersion)
+		if err != nil {
+			return false, fmt.Errorf("dependency: checking resources for %s: %w", pkg.Name, err)
+		}
+		if !records[resourcePackageKey(pkg)+"\x00"+selected.Name] {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
 // Resolve updates the locked resource set for target.
 func (r *ResourceResolver) Resolve(
 	ctx context.Context,
