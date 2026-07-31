@@ -136,6 +136,16 @@ func TestParseDependencyHTTPSHost(t *testing.T) {
 	}
 }
 
+func TestParseDependencyBranchWithSlash(t *testing.T) {
+	dependency, err := ParseDependency("ScavengeSurvive/button@feat/pawnkit")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dependency.Name() != "ScavengeSurvive/button" || dependency.RefKind != RefBranch || dependency.Ref != "feat/pawnkit" {
+		t.Fatalf("dependency = %#v", dependency)
+	}
+}
+
 func TestParseDependencyRejectsUnsafeURL(t *testing.T) {
 	for _, raw := range []string{
 		"http://gitlab.com/example/library",

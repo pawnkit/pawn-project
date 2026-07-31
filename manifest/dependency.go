@@ -123,12 +123,24 @@ func ParseDependency(raw string) (Dependency, error) {
 }
 
 func splitDependencyReference(raw string) (string, RefKind, string) {
-	lastSlash := strings.LastIndex(raw, "/")
-	idx := strings.IndexAny(raw[lastSlash+1:], ":@#")
+	repoStart := strings.IndexByte(raw, '/') + 1
+	if strings.HasPrefix(raw, "https://") {
+		hostEnd := strings.IndexByte(raw[len("https://"):], '/')
+		if hostEnd < 0 {
+			return raw, RefNone, ""
+		}
+		hostEnd += len("https://")
+		userEnd := strings.IndexByte(raw[hostEnd+1:], '/')
+		if userEnd < 0 {
+			return raw, RefNone, ""
+		}
+		repoStart = hostEnd + 1 + userEnd + 1
+	}
+	idx := strings.IndexAny(raw[repoStart:], ":@#")
 	if idx < 0 {
 		return raw, RefNone, ""
 	}
-	idx += lastSlash + 1
+	idx += repoStart
 	var kind RefKind
 	switch raw[idx] {
 	case ':':
