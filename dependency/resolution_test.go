@@ -79,6 +79,34 @@ func TestGraphResolverBuildsTransitiveGraph(t *testing.T) {
 	}
 }
 
+func TestGraphResolverPrefersDirectConstraintOverUnqualifiedTransitive(t *testing.T) {
+	root := &manifest.Manifest{Dependencies: []manifest.Dependency{
+		mustDependency(t, "owner/a#"+commitA),
+		mustDependency(t, "owner/b:v1"),
+	}}
+	provider := &graphRevisionProvider{
+		revisions: map[string]Revision{
+			"github.com/owner/a": {Commit: commitA, Resolved: commitA[:8]},
+			"github.com/owner/b": {
+				Commit: commitB, Resolved: "v1",
+				Manifest: manifest.Manifest{Dependencies: []manifest.Dependency{
+					mustDependency(t, "owner/a"),
+				}},
+			},
+		},
+		locked: map[string]bool{},
+	}
+
+	packages, err := NewGraphResolver(provider).Resolve(context.Background(), root, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := packageByKey(t, packages, "github.com/owner/a")
+	if a.Constraint != "#"+commitA || a.Transitive || len(a.RequiredBy) != 1 {
+		t.Fatalf("a = %#v", a)
+	}
+}
+
 func TestGraphResolverPassesMatchingLockEntry(t *testing.T) {
 	dependency := mustDependency(t, "owner/a:v1")
 	root := &manifest.Manifest{Dependencies: []manifest.Dependency{dependency}}

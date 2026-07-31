@@ -137,14 +137,16 @@ func (r *GraphResolver) ResolveWithOptions( //nolint:gocyclo // Graph traversal 
 			return nil, fmt.Errorf("dependency: cycle detected: %s", strings.Join(cycle, " -> "))
 		}
 		if canonicalKey, ok := canonicalKeys[dependencyCanonicalID(request.dependency)]; ok {
-			if previous := constraints[canonicalKey]; previous != constraint {
+			if previous := constraints[canonicalKey]; constraintsConflict(
+				previous, constraint, packages[canonicalKey], request,
+			) {
 				return nil, conflictingConstraintsError(canonicalKey, previous, constraint)
 			}
 			mergeResolutionEdge(packages, canonicalKey, request)
 			continue
 		}
 		if previous, ok := constraints[key]; ok {
-			if previous != constraint {
+			if constraintsConflict(previous, constraint, packages[key], request) {
 				return nil, conflictingConstraintsError(key, previous, constraint)
 			}
 			mergeResolutionEdge(packages, key, request)
@@ -179,7 +181,7 @@ func (r *GraphResolver) ResolveWithOptions( //nolint:gocyclo // Graph traversal 
 		}
 		if canonicalKey, ok := canonicalKeys[canonicalID]; ok {
 			previous := constraints[canonicalKey]
-			if previous != constraint {
+			if constraintsConflict(previous, constraint, packages[canonicalKey], request) {
 				return nil, conflictingConstraintsError(canonicalKey, previous, constraint)
 			}
 			mergeResolutionEdge(packages, canonicalKey, request)
@@ -217,6 +219,17 @@ func (r *GraphResolver) ResolveWithOptions( //nolint:gocyclo // Graph traversal 
 	}
 
 	return sortedResolvedPackages(packages), nil
+}
+
+func constraintsConflict(
+	previous, current string,
+	pkg *lockfile.Package,
+	request resolutionRequest,
+) bool {
+	if previous == current {
+		return false
+	}
+	return previous != "" && current != "" || pkg == nil || pkg.Transitive || request.direct
 }
 
 func sortedResolvedPackages(packages map[string]*lockfile.Package) []lockfile.Package {

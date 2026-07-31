@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.30.0 - 2026-07-31
+
+- Let direct dependency pins override unqualified transitive references.
+
 ## 0.29.0 - 2026-07-31
 
 - Resolve leaf dependency repositories that have no package manifest.
