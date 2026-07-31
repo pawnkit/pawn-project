@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.23.0 - 2026-07-31
+
+- Support explicit dependency graph refreshes.
+
 ## 0.22.0 - 2026-07-31
 
 - Detect direct dependency changes without network access.

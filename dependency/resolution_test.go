@@ -100,6 +100,36 @@ func TestGraphResolverPassesMatchingLockEntry(t *testing.T) {
 	}
 }
 
+func TestGraphResolverUpdateDoesNotReuseLockEntry(t *testing.T) {
+	dependency := mustDependency(t, "owner/package@main")
+	root := &manifest.Manifest{Dependencies: []manifest.Dependency{dependency}}
+	existing := &lockfile.Lock{Packages: []lockfile.Package{{
+		Key: "github.com/owner/package", Constraint: "@main",
+		Commit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+	}}}
+	provider := &graphRevisionProvider{
+		revisions: map[string]Revision{
+			"github.com/owner/package": {
+				Commit: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", Resolved: "main",
+			},
+		},
+		locked: map[string]bool{},
+	}
+
+	packages, err := NewGraphResolver(provider).ResolveWithOptions(
+		context.Background(), root, existing, ResolveOptions{Update: true},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if provider.locked["github.com/owner/package"] {
+		t.Fatal("update reused the locked revision")
+	}
+	if len(packages) != 1 || packages[0].Commit != "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" {
+		t.Fatalf("packages = %+v", packages)
+	}
+}
+
 func TestLockNeedsResolution(t *testing.T) {
 	dependency := mustDependency(t, "owner/package:v1")
 	root := &manifest.Manifest{Dependencies: []manifest.Dependency{dependency}}

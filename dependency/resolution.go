@@ -38,6 +38,11 @@ type GraphResolver struct {
 	provider RevisionProvider
 }
 
+// ResolveOptions controls dependency graph resolution.
+type ResolveOptions struct {
+	Update bool
+}
+
 // NewGraphResolver creates a dependency graph resolver.
 func NewGraphResolver(provider RevisionProvider) *GraphResolver {
 	return &GraphResolver{provider: provider}
@@ -87,6 +92,16 @@ func (r *GraphResolver) Resolve(
 	root *manifest.Manifest,
 	existing *lockfile.Lock,
 ) ([]lockfile.Package, error) {
+	return r.ResolveWithOptions(ctx, root, existing, ResolveOptions{})
+}
+
+// ResolveWithOptions selects exact revisions with explicit update behavior.
+func (r *GraphResolver) ResolveWithOptions(
+	ctx context.Context,
+	root *manifest.Manifest,
+	existing *lockfile.Lock,
+	options ResolveOptions,
+) ([]lockfile.Package, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -134,11 +149,7 @@ func (r *GraphResolver) Resolve(
 			return nil, fmt.Errorf("dependency: graph exceeds %d packages", maxResolutionPackages)
 		}
 
-		var reusable *lockfile.Package
-		if candidate, ok := locked[key]; ok && candidate.Constraint == constraint {
-			candidateCopy := candidate
-			reusable = &candidateCopy
-		}
+		reusable := reusableLockedPackage(locked, key, constraint, options.Update)
 		revision, err := r.provider.Resolve(ctx, request.dependency, reusable)
 		if err != nil {
 			return nil, fmt.Errorf("dependency: resolving %s: %w", key, err)
@@ -186,6 +197,21 @@ func (r *GraphResolver) Resolve(
 	}
 	sort.Slice(result, func(i, j int) bool { return result[i].Key < result[j].Key })
 	return result, nil
+}
+
+func reusableLockedPackage(
+	locked map[string]lockfile.Package,
+	key, constraint string,
+	update bool,
+) *lockfile.Package {
+	if update {
+		return nil
+	}
+	candidate, ok := locked[key]
+	if !ok || candidate.Constraint != constraint {
+		return nil
+	}
+	return &candidate
 }
 
 func rootResolutionRequests(root *manifest.Manifest) []resolutionRequest {
