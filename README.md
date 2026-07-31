@@ -14,6 +14,8 @@ checks its archive and file hashes, and returns only the declared files.
 whole payload if installation fails.
 `dependency.ResourceRestorer` selects one exact host target and commits all
 of its locked resources together.
+`lockfile.MarshalSampctlResources` updates the resource extension without
+rewriting dependency commits.
 
 ## Use it in Go
 

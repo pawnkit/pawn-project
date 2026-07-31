@@ -55,7 +55,8 @@ checksums, bounded sizes, and safe destination paths. ZIP, tar.gz, and raw
 assets can be downloaded and verified in memory. Filesystem installation is
 staged below `.pawnkit` and rolled back as one payload when a write fails.
 All locked records for an exact host target are verified before that payload
-is installed. Network resolution and lockfile updates remain to be implemented.
+is installed. PawnKit can update the namespaced resource set without changing
+sampctl dependency data. Network resolution remains to be implemented.
 
 ## Toolchain manager
 

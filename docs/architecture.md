@@ -55,6 +55,8 @@ The `dependency` package restores every remote dependency source at its locked
 Git commit. The lockfile package validates RFC 0021 resource records before
 the dependency layer downloads or extracts them. The field-by-field status is
 in [compatibility.md](compatibility.md).
+Its resource writer preserves sampctl v1 dependency data and unrelated
+extension fields.
 
 ## Design choices
 

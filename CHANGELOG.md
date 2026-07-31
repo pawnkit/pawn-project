@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.0 - 2026-07-31
+
+### Added
+
+- Update validated resource records while preserving sampctl lock data.
+
 ## 0.11.0 - 2026-07-31
 
 ### Added
