@@ -6,6 +6,7 @@
   "preset": "openmp",
   "dependencies": [
     "openmultiplayer/omp-stdlib",
+    "https://gitlab.com/example/pawn-library@main",
     "pawn-lang/YSI-Includes@5.x",
     "plugin://samp-incognito/samp-streamer-plugin:2.8.2"
   ],

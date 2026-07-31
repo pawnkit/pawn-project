@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.27.0 - 2026-07-31
+
+- Parse credential-free HTTPS dependency repositories.
+- Include provider hosts in dependency identity.
+
 ## 0.26.1 - 2026-07-31
 
 - Distinguish exact tags from version ranges without provider lookups.

@@ -1,7 +1,9 @@
 package manifest
 
 import (
+	"errors"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 )
@@ -32,6 +34,7 @@ const (
 type Dependency struct {
 	Raw     string
 	Scheme  Scheme
+	Site    string
 	User    string
 	Repo    string
 	RefKind RefKind
@@ -43,9 +46,18 @@ func (d Dependency) Name() string {
 	return d.User + "/" + d.Repo
 }
 
+// RepositoryURL returns the dependency's credential-free HTTPS URL.
+func (d Dependency) RepositoryURL() string {
+	site := d.Site
+	if site == "" {
+		site = "github.com"
+	}
+	return "https://" + site + "/" + d.Name()
+}
+
 // dependencyPattern matches pawn-project.schema.json's $defs.dependencyString.
 var dependencyPattern = regexp.MustCompile(
-	`^(plugin://|component://|includes://|filterscript://)?[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+([:#@].+)?$`,
+	`^(?:(?:plugin://|component://|includes://|filterscript://)?[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+|https://[A-Za-z0-9.-]+/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)([:#@].+)?$`,
 )
 
 var schemePrefixes = []struct {
@@ -76,36 +88,60 @@ func ParseDependency(raw string) (Dependency, error) {
 		}
 	}
 
-	userRepo := rest
-	refKind := RefNone
-
-	var ref string
-
-	if idx := strings.IndexAny(rest, ":@#"); idx >= 0 {
-		userRepo = rest[:idx]
-		ref = rest[idx+1:]
-
-		switch rest[idx] {
-		case ':':
-			refKind = RefTag
-		case '@':
-			refKind = RefBranch
-		case '#':
-			refKind = RefCommit
-		}
+	repository, refKind, ref := splitDependencyReference(rest)
+	site, user, repo, err := parseDependencyRepository(repository)
+	if err != nil {
+		return Dependency{}, err
 	}
-
-	before, after, ok := strings.Cut(userRepo, "/")
-	if !ok {
-		return Dependency{}, fmt.Errorf("manifest: %q is missing a user/repo separator", raw)
+	if scheme != SchemeDependency && site != "github.com" {
+		return Dependency{}, errors.New("manifest: prefixed dependencies must use GitHub")
 	}
 
 	return Dependency{
 		Raw:     raw,
 		Scheme:  scheme,
-		User:    before,
-		Repo:    after,
+		Site:    site,
+		User:    user,
+		Repo:    repo,
 		RefKind: refKind,
 		Ref:     ref,
 	}, nil
+}
+
+func splitDependencyReference(raw string) (string, RefKind, string) {
+	lastSlash := strings.LastIndex(raw, "/")
+	idx := strings.IndexAny(raw[lastSlash+1:], ":@#")
+	if idx < 0 {
+		return raw, RefNone, ""
+	}
+	idx += lastSlash + 1
+	var kind RefKind
+	switch raw[idx] {
+	case ':':
+		kind = RefTag
+	case '@':
+		kind = RefBranch
+	case '#':
+		kind = RefCommit
+	}
+	return raw[:idx], kind, raw[idx+1:]
+}
+
+func parseDependencyRepository(raw string) (string, string, string, error) {
+	site := "github.com"
+	userRepo := raw
+	if strings.HasPrefix(raw, "https://") {
+		parsed, err := url.Parse(raw)
+		if err != nil || parsed.Scheme != "https" || parsed.Host == "" || parsed.User != nil ||
+			parsed.RawQuery != "" || parsed.Fragment != "" || parsed.Port() != "" {
+			return "", "", "", fmt.Errorf("manifest: dependency URL %q is invalid", raw)
+		}
+		site = strings.ToLower(parsed.Hostname())
+		userRepo = strings.Trim(parsed.EscapedPath(), "/")
+	}
+	parts := strings.Split(userRepo, "/")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return "", "", "", fmt.Errorf("manifest: %q is missing a user/repo separator", raw)
+	}
+	return site, parts[0], parts[1], nil
 }

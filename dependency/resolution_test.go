@@ -154,6 +154,27 @@ func TestGraphResolverCollapsesProviderAliases(t *testing.T) {
 	}
 }
 
+func TestGraphResolverKeepsProviderHostsDistinct(t *testing.T) {
+	github := mustDependency(t, "owner/package")
+	gitlab := mustDependency(t, "https://gitlab.com/owner/package")
+	root := &manifest.Manifest{Dependencies: []manifest.Dependency{github, gitlab}}
+	provider := &graphRevisionProvider{
+		revisions: map[string]Revision{
+			"github.com/owner/package": {Commit: commitA, Resolved: "HEAD"},
+			"gitlab.com/owner/package": {Commit: commitB, Resolved: "HEAD"},
+		},
+		locked: map[string]bool{},
+	}
+
+	packages, err := NewGraphResolver(provider).Resolve(context.Background(), root, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(packages) != 2 || packages[0].Key == packages[1].Key {
+		t.Fatalf("packages = %+v", packages)
+	}
+}
+
 func TestLockNeedsResolution(t *testing.T) {
 	dependency := mustDependency(t, "owner/package:v1")
 	root := &manifest.Manifest{Dependencies: []manifest.Dependency{dependency}}

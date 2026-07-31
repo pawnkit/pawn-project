@@ -24,6 +24,7 @@ var fullCommitPattern = regexp.MustCompile(`^[0-9a-f]{40}$`)
 type Revision struct {
 	Commit        string
 	Resolved      string
+	CanonicalSite string
 	CanonicalName string
 	SourceURL     string
 	Manifest      manifest.Manifest
@@ -135,7 +136,7 @@ func (r *GraphResolver) ResolveWithOptions( //nolint:gocyclo // Graph traversal 
 			cycle := append(append([]string(nil), request.ancestry[cycleStart:]...), key)
 			return nil, fmt.Errorf("dependency: cycle detected: %s", strings.Join(cycle, " -> "))
 		}
-		if canonicalKey, ok := canonicalKeys[request.dependency.Name()]; ok {
+		if canonicalKey, ok := canonicalKeys[dependencyCanonicalID(request.dependency)]; ok {
 			if previous := constraints[canonicalKey]; previous != constraint {
 				return nil, conflictingConstraintsError(canonicalKey, previous, constraint)
 			}
@@ -161,18 +162,22 @@ func (r *GraphResolver) ResolveWithOptions( //nolint:gocyclo // Graph traversal 
 		if !fullCommitPattern.MatchString(revision.Commit) {
 			return nil, fmt.Errorf("dependency: %s resolved invalid commit %q", key, revision.Commit)
 		}
-		if revision.SourceURL == "" {
-			name := revision.CanonicalName
-			if name == "" {
-				name = request.dependency.Name()
-			}
-			revision.SourceURL = "https://github.com/" + name
+		canonicalSite := revision.CanonicalSite
+		if canonicalSite == "" {
+			canonicalSite = request.dependency.Site
+		}
+		if canonicalSite == "" {
+			canonicalSite = "github.com"
 		}
 		canonicalName := revision.CanonicalName
 		if canonicalName == "" {
 			canonicalName = request.dependency.Name()
 		}
-		if canonicalKey, ok := canonicalKeys[canonicalName]; ok {
+		canonicalID := canonicalSite + "/" + canonicalName
+		if revision.SourceURL == "" {
+			revision.SourceURL = "https://" + canonicalID
+		}
+		if canonicalKey, ok := canonicalKeys[canonicalID]; ok {
 			previous := constraints[canonicalKey]
 			if previous != constraint {
 				return nil, conflictingConstraintsError(canonicalKey, previous, constraint)
@@ -195,8 +200,8 @@ func (r *GraphResolver) ResolveWithOptions( //nolint:gocyclo // Graph traversal 
 		}
 		packages[key] = pkg
 		constraints[key] = constraint
-		canonicalKeys[canonicalName] = key
-		canonicalKeys[request.dependency.Name()] = key
+		canonicalKeys[canonicalID] = key
+		canonicalKeys[dependencyCanonicalID(request.dependency)] = key
 		if request.parent != "" {
 			addForwardDependency(packages, request.parent, pkg.Name)
 		}
@@ -304,7 +309,15 @@ func dependencyKey(dependency manifest.Dependency) string {
 	if dependency.Scheme != manifest.SchemeDependency {
 		return string(dependency.Scheme) + "://" + dependency.Name()
 	}
-	return "github.com/" + dependency.Name()
+	return dependencyCanonicalID(dependency)
+}
+
+func dependencyCanonicalID(dependency manifest.Dependency) string {
+	site := dependency.Site
+	if site == "" {
+		site = "github.com"
+	}
+	return site + "/" + dependency.Name()
 }
 
 func dependencyConstraint(dependency manifest.Dependency) string {

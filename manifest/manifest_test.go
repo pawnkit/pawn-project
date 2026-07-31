@@ -40,8 +40,12 @@ func TestLoad_PawnKitSpecExample(t *testing.T) {
 		t.Errorf("Preset = %q", res.Manifest.Preset)
 	}
 
-	if len(res.Manifest.Dependencies) != 3 {
-		t.Fatalf("Dependencies = %d, want 3", len(res.Manifest.Dependencies))
+	if len(res.Manifest.Dependencies) != 4 {
+		t.Fatalf("Dependencies = %d, want 4", len(res.Manifest.Dependencies))
+	}
+	gitlab := res.Manifest.Dependencies[1]
+	if gitlab.Site != "gitlab.com" || gitlab.Name() != "example/pawn-library" {
+		t.Errorf("GitLab dependency parsed as %+v", gitlab)
 	}
 
 	if len(res.Manifest.Resources) != 1 ||
@@ -50,7 +54,7 @@ func TestLoad_PawnKitSpecExample(t *testing.T) {
 		t.Fatalf("Resources = %+v", res.Manifest.Resources)
 	}
 
-	streamer := res.Manifest.Dependencies[2]
+	streamer := res.Manifest.Dependencies[3]
 	if streamer.Scheme != SchemePlugin || streamer.User != "samp-incognito" || streamer.Repo != "samp-streamer-plugin" {
 		t.Errorf("streamer dependency parsed as %+v", streamer)
 	}
@@ -117,6 +121,31 @@ func TestLoad_MinimalManifestIsValid(t *testing.T) {
 
 	if res.Manifest == nil {
 		t.Fatal("Manifest is nil")
+	}
+}
+
+func TestParseDependencyHTTPSHost(t *testing.T) {
+	dependency, err := ParseDependency("https://gitlab.com/example/library@main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dependency.Site != "gitlab.com" || dependency.Name() != "example/library" ||
+		dependency.RefKind != RefBranch || dependency.Ref != "main" ||
+		dependency.RepositoryURL() != "https://gitlab.com/example/library" {
+		t.Fatalf("dependency = %+v", dependency)
+	}
+}
+
+func TestParseDependencyRejectsUnsafeURL(t *testing.T) {
+	for _, raw := range []string{
+		"http://gitlab.com/example/library",
+		"https://token@gitlab.com/example/library",
+		"https://gitlab.com:8443/example/library",
+		"https://gitlab.com/example/library/extra",
+	} {
+		if _, err := ParseDependency(raw); err == nil {
+			t.Fatalf("ParseDependency(%q) succeeded", raw)
+		}
 	}
 }
 
