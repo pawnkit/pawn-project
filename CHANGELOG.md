@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.28.0 - 2026-07-31
+
+- Resolve HTTPS-hosted dependencies through a bounded Git checkout.
+
 ## 0.27.0 - 2026-07-31
 
 - Parse credential-free HTTPS dependency repositories.
