@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.0 - 2026-07-31
+
+### Added
+
+- Select sampctl resources and release assets deterministically.
+
 ## 0.12.0 - 2026-07-31
 
 ### Added

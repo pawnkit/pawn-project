@@ -56,7 +56,9 @@ assets can be downloaded and verified in memory. Filesystem installation is
 staged below `.pawnkit` and rolled back as one payload when a write fails.
 All locked records for an exact host target are verified before that payload
 is installed. PawnKit can update the namespaced resource set without changing
-sampctl dependency data. Network resolution remains to be implemented.
+sampctl dependency data. Manifest selection follows sampctl's exact-version,
+then platform-default precedence. Release archive inspection remains to be
+implemented.
 
 ## Toolchain manager
 
