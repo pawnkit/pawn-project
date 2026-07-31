@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
-	"sort"
 	"strings"
 
 	"github.com/pawnkit/pawn-project/manifest"
@@ -50,49 +49,34 @@ func SelectManifestResource(
 	)
 }
 
-// SelectReleaseAsset finds one safe asset matching the resource pattern.
+// SelectReleaseAsset returns the first safe matching asset.
 func SelectReleaseAsset(pattern string, assets []ReleaseAsset) (ReleaseAsset, error) {
 	matcher, err := regexp.Compile(pattern)
 	if err != nil {
 		return ReleaseAsset{}, fmt.Errorf("dependency: invalid resource pattern %q: %w", pattern, err)
 	}
-	assets = append([]ReleaseAsset(nil), assets...)
-	sort.Slice(assets, func(i, j int) bool {
-		return assets[i].Name < assets[j].Name
-	})
 
-	var matches []ReleaseAsset
+	var selected ReleaseAsset
 	for _, asset := range assets {
 		if matcher.MatchString(asset.Name) {
-			matches = append(matches, asset)
+			selected = asset
+			break
 		}
 	}
-	if len(matches) == 0 {
+	if selected.Name == "" {
 		return ReleaseAsset{}, fmt.Errorf("dependency: no release asset matches %q", pattern)
 	}
-	if len(matches) != 1 {
-		names := make([]string, len(matches))
-		for i, match := range matches {
-			names[i] = match.Name
-		}
-		return ReleaseAsset{}, fmt.Errorf(
-			"dependency: resource pattern %q matches multiple assets: %s",
-			pattern,
-			strings.Join(names, ", "),
-		)
-	}
 
-	asset := matches[0]
-	parsed, err := url.Parse(asset.URL)
+	parsed, err := url.Parse(selected.URL)
 	if err != nil || parsed.Scheme != "https" || parsed.Host == "" || parsed.User != nil {
-		return ReleaseAsset{}, fmt.Errorf("dependency: resource asset has unsafe URL %q", asset.URL)
+		return ReleaseAsset{}, fmt.Errorf("dependency: resource asset has unsafe URL %q", selected.URL)
 	}
-	if asset.Size < 1 || asset.Size > maxResourceBytes {
+	if selected.Size < 1 || selected.Size > maxResourceBytes {
 		return ReleaseAsset{}, fmt.Errorf(
 			"dependency: resource asset %q has invalid size %d",
-			asset.Name,
-			asset.Size,
+			selected.Name,
+			selected.Size,
 		)
 	}
-	return asset, nil
+	return selected, nil
 }

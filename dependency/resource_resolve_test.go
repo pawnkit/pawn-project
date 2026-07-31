@@ -55,13 +55,16 @@ func TestSelectReleaseAssetUsesRegularExpression(t *testing.T) {
 	}
 }
 
-func TestSelectReleaseAssetRejectsAmbiguityAndUnsafeURLs(t *testing.T) {
-	_, err := SelectReleaseAsset(`^plugin-`, []ReleaseAsset{
+func TestSelectReleaseAssetUsesProviderOrderAndRejectsUnsafeURLs(t *testing.T) {
+	asset, err := SelectReleaseAsset(`^plugin-`, []ReleaseAsset{
 		{Name: "plugin-a", URL: "https://example.com/a", Size: 1},
 		{Name: "plugin-b", URL: "https://example.com/b", Size: 1},
 	})
-	if err == nil || !strings.Contains(err.Error(), "multiple") {
-		t.Fatalf("ambiguity error = %v", err)
+	if err != nil {
+		t.Fatalf("SelectReleaseAsset: %v", err)
+	}
+	if asset.Name != "plugin-a" {
+		t.Fatalf("asset = %q, want plugin-a", asset.Name)
 	}
 
 	_, err = SelectReleaseAsset(`plugin`, []ReleaseAsset{
