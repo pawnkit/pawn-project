@@ -327,8 +327,8 @@ func resourceIncludeDirectory(packageKey, resourceName string) string {
 	} {
 		name = strings.TrimPrefix(name, prefix)
 	}
-	_, repo, ok := strings.Cut(name, "/")
-	if !ok || repo == "" {
+	repo := path.Base(name)
+	if repo == "." || repo == "/" || repo == "" {
 		repo = "resource"
 	}
 	sum := sha256.Sum256([]byte(resourceName))

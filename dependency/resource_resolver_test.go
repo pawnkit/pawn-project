@@ -27,8 +27,8 @@ func TestResourceResolverBuildsTargetRecordsAndPreservesOthers(t *testing.T) {
 		}]
 	}`))
 	pkg := lockfile.Package{
-		Name: "owner/plugin", Resolved: "v1", Commit: "abcdef0",
-		Kind: lockfile.KindPlugin,
+		Key: "github.com/owner/plugin", Name: "owner/plugin",
+		Resolved: "v1", Commit: "abcdef0", Kind: lockfile.KindDependency,
 		Source: lockfile.PackageSource{
 			Type: lockfile.SourceTypeGit,
 			URL:  "https://github.com/owner/plugin",
@@ -38,7 +38,7 @@ func TestResourceResolverBuildsTargetRecordsAndPreservesOthers(t *testing.T) {
 		Source: "plugin.dll", Destination: "plugins/plugin.dll",
 		Size: 7, Checksum: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 	})
-	windows.Package = "plugin://owner/plugin"
+	windows.Package = "github.com/owner/plugin"
 	windows.Target = "windows-amd64"
 	lock := &lockfile.Lock{
 		SchemaVersion: 1,
@@ -63,6 +63,9 @@ func TestResourceResolverBuildsTargetRecordsAndPreservesOthers(t *testing.T) {
 	}
 	if records[0].Target != "linux-amd64" || records[1].Target != "windows-amd64" {
 		t.Fatalf("targets = %s, %s", records[0].Target, records[1].Target)
+	}
+	if records[0].Package != "github.com/owner/plugin" {
+		t.Fatalf("package key = %q", records[0].Package)
 	}
 	if len(provider.packages) != 1 || provider.packages[0].Resolved != "v1" {
 		t.Fatalf("provider packages = %+v", provider.packages)

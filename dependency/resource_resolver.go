@@ -62,15 +62,21 @@ func (r *ResourceResolver) Resolve(
 	})
 	resolved := make([]lockfile.ResolvedResource, 0, len(packages))
 	for _, pkg := range packages {
-		if !resourcePackageKind(pkg.Kind) {
-			continue
-		}
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		pkgManifest, err := r.loadResourceManifest(root, pkg)
+		pkgManifest, found, err := r.loadResourceManifest(root, pkg)
 		if err != nil {
 			return nil, fmt.Errorf("dependency: resolving resources for %s: %w", pkg.Name, err)
+		}
+		if !found || len(pkgManifest.Resources) == 0 {
+			if resourcePackageKind(pkg.Kind) {
+				return nil, fmt.Errorf(
+					"dependency: resolving resources for %s: package manifest does not declare resources",
+					pkg.Name,
+				)
+			}
+			continue
 		}
 		selected, err := SelectManifestResource(pkgManifest.Resources, target, runtimeVersion)
 		if err != nil {
@@ -118,35 +124,37 @@ func (r *ResourceResolver) Resolve(
 func (r *ResourceResolver) loadResourceManifest(
 	root string,
 	pkg lockfile.Package,
-) (*manifest.Manifest, error) {
+) (*manifest.Manifest, bool, error) {
 	directory := pathutil.Join(root, "dependencies", packageRepo(pkg.Name))
 	if pkg.Source.Type == lockfile.SourceTypeLocal {
 		var err error
 		directory, err = pathutil.SafeJoin(root, pkg.Source.URL)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 	}
 	manifestPath := pathutil.Join(directory, "pawn.json")
 	if _, err := r.fsys.Stat(manifestPath); errors.Is(err, fs.ErrNotExist) {
 		manifestPath = pathutil.Join(directory, "pawn.yaml")
 	} else if err != nil {
-		return nil, fmt.Errorf("checking package manifest: %w", err)
+		return nil, false, fmt.Errorf("checking package manifest: %w", err)
+	}
+	if _, err := r.fsys.Stat(manifestPath); errors.Is(err, fs.ErrNotExist) {
+		return nil, false, nil
+	} else if err != nil {
+		return nil, false, fmt.Errorf("checking package manifest: %w", err)
 	}
 	result, err := manifest.Load(source.NewRegistry(), r.fsys, manifestPath)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if result.Manifest == nil {
-		return nil, errors.New("package manifest could not be decoded")
+		return nil, false, errors.New("package manifest could not be decoded")
 	}
-	if len(result.Diagnostics) != 0 {
-		return nil, fmt.Errorf("package manifest: %s", result.Diagnostics[0].Message)
+	if len(result.Manifest.Resources) != 0 && len(result.Diagnostics) != 0 {
+		return nil, false, fmt.Errorf("package manifest: %s", result.Diagnostics[0].Message)
 	}
-	if len(result.Manifest.Resources) == 0 {
-		return nil, errors.New("package manifest does not declare resources")
-	}
-	return result.Manifest, nil
+	return result.Manifest, true, nil
 }
 
 func resourcePackageKind(kind string) bool {
@@ -162,5 +170,8 @@ func resourcePackageKind(kind string) bool {
 }
 
 func resourcePackageKey(pkg lockfile.Package) string {
+	if pkg.Key != "" {
+		return pkg.Key
+	}
 	return pkg.Kind + "://" + pkg.Name
 }

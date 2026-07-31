@@ -44,6 +44,7 @@ type Compiler struct {
 
 // Package is one resolved dependency-graph entry.
 type Package struct {
+	Key               string             `json:"-"`
 	Name              string             `json:"name"`
 	Resolved          string             `json:"resolved"`
 	Version           string             `json:"version,omitempty"`

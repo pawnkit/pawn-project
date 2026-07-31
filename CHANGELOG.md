@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.16.0 - 2026-07-31
+
+### Fixed
+
+- Resolve resources declared by packages without resource-scheme lock keys.
+
 ## 0.15.0 - 2026-07-31
 
 ### Added

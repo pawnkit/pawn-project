@@ -59,7 +59,9 @@ is installed. PawnKit can update the namespaced resource set without changing
 sampctl dependency data. Manifest selection follows sampctl's exact-version,
 then platform-default precedence. ZIP, tar.gz, and single-file assets are
 inspected into complete lock records. Resolution loads restored package
-manifests and leaves release-provider transport to the caller.
+manifests and leaves release-provider transport to the caller. Packages using
+ordinary sampctl dependency keys are supported when their manifests declare
+resources.
 
 ## Toolchain manager
 

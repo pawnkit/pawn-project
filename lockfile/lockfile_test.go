@@ -170,6 +170,53 @@ func TestLoad_SampctlResolvedResources(t *testing.T) {
 	}
 }
 
+func TestLoad_SampctlResourceUsesOrdinaryDependencyKey(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/pawn.lock", []byte(`{
+		"version": 1,
+		"generated": "2026-07-31T00:00:00Z",
+		"sampctl_version": "1.14.1",
+		"dependencies": {
+			"github.com/owner/plugin": {
+				"constraint": ":v1",
+				"resolved": "v1",
+				"commit": "abcdef0",
+				"user": "owner",
+				"repo": "plugin"
+			}
+		},
+		"pawnkit": {
+			"schema_version": 1,
+			"resources": [{
+				"package": "github.com/owner/plugin",
+				"resource": "plugin",
+				"target": "linux-amd64",
+				"url": "https://example.com/plugin.so",
+				"size": 1,
+				"checksum": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				"archive": "file",
+				"files": [{
+					"source": "plugin.so",
+					"destination": "plugins/plugin.so",
+					"size": 1,
+					"checksum": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+				}]
+			}]
+		}
+	}`))
+
+	result, err := Load(source.NewRegistry(), m, "/proj/pawn.lock")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("diagnostics = %v", result.Diagnostics)
+	}
+	if result.Lock.Packages[0].Key != "github.com/owner/plugin" {
+		t.Fatalf("package key = %q", result.Lock.Packages[0].Key)
+	}
+}
+
 func TestLoad_SampctlRejectsUnsafeResolvedResources(t *testing.T) {
 	m := fsx.NewMem()
 	m.AddFile("/proj/pawn.lock", []byte(`{

@@ -173,7 +173,7 @@ func normalizeSampctlPackages(
 
 		indexByName[name] = len(packages)
 		packages = append(packages, Package{
-			Name: name, Resolved: dependency.Resolved, Commit: dependency.Commit,
+			Key: key, Name: name, Resolved: dependency.Resolved, Commit: dependency.Commit,
 			Source:   PackageSource{Type: sourceType, URL: sourceURL},
 			Checksum: checksum, Kind: kind,
 		})

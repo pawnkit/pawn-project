@@ -67,6 +67,7 @@ func (v *validator) run() {
 	}
 
 	seen := make(map[string]bool, len(v.l.Packages))
+	resourcePackages := make(map[string]bool, len(v.l.Packages)*2)
 
 	for i, p := range v.l.Packages {
 		v.checkPackage(i, p)
@@ -76,11 +77,15 @@ func (v *validator) run() {
 		}
 
 		seen[p.Name] = true
+		resourcePackages[p.Name] = true
+		if p.Key != "" {
+			resourcePackages[p.Key] = true
+		}
 	}
 
 	v.checkEdges(seen)
 	v.checkCycles()
-	v.checkResources(seen)
+	v.checkResources(resourcePackages)
 }
 
 func (v *validator) checkResources(packages map[string]bool) {
@@ -98,7 +103,7 @@ func (v *validator) checkResources(packages map[string]bool) {
 		seen[key] = true
 
 		name := strings.TrimPrefix(resource.Package, resourceSchemePrefix(resource.Package))
-		if !packages[name] {
+		if !packages[resource.Package] && !packages[name] {
 			v.add(CodeUnknownResourcePackage, diagnostic.SeverityError,
 				"resources[%d]: package %q is not in dependencies", i, resource.Package)
 		}
@@ -107,9 +112,9 @@ func (v *validator) checkResources(packages map[string]bool) {
 }
 
 func (v *validator) checkResource(i int, resource ResolvedResource) {
-	if resourceSchemePrefix(resource.Package) == "" {
+	if !validResourcePackageKey(resource.Package) {
 		v.add(CodeInvalidResource, diagnostic.SeverityError,
-			"resources[%d]: package %q must use a resource dependency scheme", i, resource.Package)
+			"resources[%d]: package key %q is invalid", i, resource.Package)
 	}
 	if resource.Resource == "" {
 		v.add(CodeMissingField, diagnostic.SeverityError, `resources[%d]: "resource" is required`, i)
@@ -156,6 +161,16 @@ func (v *validator) checkResource(i int, resource ResolvedResource) {
 			break
 		}
 	}
+}
+
+func validResourcePackageKey(key string) bool {
+	if prefix := resourceSchemePrefix(key); prefix != "" {
+		return namePattern.MatchString(strings.TrimPrefix(key, prefix))
+	}
+	parts := strings.Split(key, "/")
+	return len(parts) == 3 &&
+		parts[0] != "" &&
+		namePattern.MatchString(parts[1]+"/"+parts[2])
 }
 
 func (v *validator) checkResourceFile(resourceIndex, fileIndex int, file ResolvedResourceFile, destinations map[string]bool) {
