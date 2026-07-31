@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.18.0 - 2026-07-31
+
+- Add a bounded temporary replay store for resource downloads.
+
 ## 0.17.1 - 2026-07-31
 
 - Preserve exact dependency keys while validating resource lock updates.
