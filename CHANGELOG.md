@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.19.0 - 2026-07-31
+
+- Add provider-neutral dependency graph resolution.
+- Preserve sampctl constraint and reverse-edge metadata.
+
 ## 0.18.0 - 2026-07-31
 
 - Add a bounded temporary replay store for resource downloads.

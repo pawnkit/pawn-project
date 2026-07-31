@@ -1,0 +1,173 @@
+package dependency
+
+import (
+	"context"
+	"fmt"
+	"strings"
+	"testing"
+
+	"github.com/pawnkit/pawn-project/lockfile"
+	"github.com/pawnkit/pawn-project/manifest"
+)
+
+const (
+	commitA = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	commitB = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	commitD = "dddddddddddddddddddddddddddddddddddddddd"
+)
+
+type graphRevisionProvider struct {
+	revisions map[string]Revision
+	locked    map[string]bool
+}
+
+func (p *graphRevisionProvider) Resolve(
+	_ context.Context,
+	dependency manifest.Dependency,
+	locked *lockfile.Package,
+) (Revision, error) {
+	key := dependencyKey(dependency)
+	p.locked[key] = locked != nil
+	revision, ok := p.revisions[key]
+	if !ok {
+		return Revision{}, fmt.Errorf("missing fixture %s", key)
+	}
+	return revision, nil
+}
+
+func TestGraphResolverBuildsTransitiveGraph(t *testing.T) {
+	root := &manifest.Manifest{
+		Dependencies: []manifest.Dependency{mustDependency(t, "owner/a:v1")},
+		DevDependencies: []manifest.Dependency{
+			mustDependency(t, "owner/dev#"+commitD),
+		},
+	}
+	provider := &graphRevisionProvider{
+		revisions: map[string]Revision{
+			"github.com/owner/a": {
+				Commit: commitA, Resolved: "v1",
+				Manifest: manifest.Manifest{Dependencies: []manifest.Dependency{
+					mustDependency(t, "owner/b@main"),
+				}},
+			},
+			"github.com/owner/b":   {Commit: commitB, Resolved: "main"},
+			"github.com/owner/dev": {Commit: commitD, Resolved: commitD[:8]},
+		},
+		locked: map[string]bool{},
+	}
+
+	packages, err := NewGraphResolver(provider).Resolve(context.Background(), root, nil)
+	if err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	if len(packages) != 3 {
+		t.Fatalf("packages = %#v", packages)
+	}
+	a := packageByKey(t, packages, "github.com/owner/a")
+	if a.Constraint != ":v1" || a.Transitive ||
+		len(a.Dependencies) != 1 || a.Dependencies[0] != "owner/b" {
+		t.Fatalf("a = %#v", a)
+	}
+	b := packageByKey(t, packages, "github.com/owner/b")
+	if b.Constraint != "@main" || b.Branch != "main" || !b.Transitive ||
+		len(b.RequiredBy) != 1 || b.RequiredBy[0] != a.Key {
+		t.Fatalf("b = %#v", b)
+	}
+	dev := packageByKey(t, packages, "github.com/owner/dev")
+	if dev.Kind != lockfile.KindDevDependency || dev.Integrity != "commit:"+commitD {
+		t.Fatalf("dev = %#v", dev)
+	}
+}
+
+func TestGraphResolverPassesMatchingLockEntry(t *testing.T) {
+	dependency := mustDependency(t, "owner/a:v1")
+	root := &manifest.Manifest{Dependencies: []manifest.Dependency{dependency}}
+	provider := &graphRevisionProvider{
+		revisions: map[string]Revision{
+			"github.com/owner/a": {Commit: commitA, Resolved: "v1"},
+		},
+		locked: map[string]bool{},
+	}
+	existing := &lockfile.Lock{Packages: []lockfile.Package{{
+		Key: "github.com/owner/a", Constraint: ":v1", Commit: commitA,
+	}}}
+
+	if _, err := NewGraphResolver(provider).Resolve(context.Background(), root, existing); err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	if !provider.locked["github.com/owner/a"] {
+		t.Fatal("matching lock entry was not passed to provider")
+	}
+}
+
+func TestGraphResolverRejectsConflictsAndCycles(t *testing.T) {
+	t.Run("conflict", func(t *testing.T) {
+		root := &manifest.Manifest{Dependencies: []manifest.Dependency{
+			mustDependency(t, "owner/a:v1"),
+			mustDependency(t, "owner/b:v1"),
+		}}
+		provider := &graphRevisionProvider{
+			revisions: map[string]Revision{
+				"github.com/owner/a": {Commit: commitA, Resolved: "v1"},
+				"github.com/owner/b": {
+					Commit: commitB, Resolved: "v1",
+					Manifest: manifest.Manifest{Dependencies: []manifest.Dependency{
+						mustDependency(t, "owner/a:v2"),
+					}},
+				},
+			},
+			locked: map[string]bool{},
+		}
+		_, err := NewGraphResolver(provider).Resolve(context.Background(), root, nil)
+		if err == nil || !strings.Contains(err.Error(), "conflicting constraints") {
+			t.Fatalf("Resolve error = %v", err)
+		}
+	})
+
+	t.Run("cycle", func(t *testing.T) {
+		root := &manifest.Manifest{Dependencies: []manifest.Dependency{
+			mustDependency(t, "owner/a:v1"),
+		}}
+		provider := &graphRevisionProvider{
+			revisions: map[string]Revision{
+				"github.com/owner/a": {
+					Commit: commitA, Resolved: "v1",
+					Manifest: manifest.Manifest{Dependencies: []manifest.Dependency{
+						mustDependency(t, "owner/b:v1"),
+					}},
+				},
+				"github.com/owner/b": {
+					Commit: commitB, Resolved: "v1",
+					Manifest: manifest.Manifest{Dependencies: []manifest.Dependency{
+						mustDependency(t, "owner/a:v1"),
+					}},
+				},
+			},
+			locked: map[string]bool{},
+		}
+		_, err := NewGraphResolver(provider).Resolve(context.Background(), root, nil)
+		if err == nil || !strings.Contains(err.Error(), "cycle detected") {
+			t.Fatalf("Resolve error = %v", err)
+		}
+	})
+}
+
+func mustDependency(t *testing.T, raw string) manifest.Dependency {
+	t.Helper()
+	dependency, err := manifest.ParseDependency(raw)
+	if err != nil {
+		t.Fatalf("ParseDependency(%q): %v", raw, err)
+	}
+	return dependency
+}
+
+func packageByKey(t *testing.T, packages []lockfile.Package, key string) lockfile.Package {
+	t.Helper()
+	for _, pkg := range packages {
+		if pkg.Key == key {
+			return pkg
+		}
+	}
+	t.Fatalf("package %q not found in %#v", key, packages)
+	return lockfile.Package{}
+}

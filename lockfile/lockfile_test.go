@@ -78,6 +78,15 @@ func TestLoad_SampctlLockfile(t *testing.T) {
 	if len(ysi.Dependencies) != 1 || ysi.Dependencies[0] != "openmultiplayer/omp-stdlib" {
 		t.Fatalf("YSI dependencies = %v", ysi.Dependencies)
 	}
+	if ysi.Constraint != ":5.10.0" ||
+		ysi.Integrity != "commit:4444444444444444444444444444444444444444" {
+		t.Fatalf("YSI lock metadata = %+v", ysi)
+	}
+	stdlib, ok := res.Lock.ByName("openmultiplayer/omp-stdlib")
+	if !ok || !stdlib.Transitive || len(stdlib.RequiredBy) != 1 ||
+		stdlib.RequiredBy[0] != "github.com/pawn-lang/YSI-Includes" {
+		t.Fatalf("stdlib lock metadata = %+v, found %v", stdlib, ok)
+	}
 	if res.Lock.Compiler == nil || res.Lock.Compiler.Vendor != "openmultiplayer" {
 		t.Fatalf("compiler = %+v", res.Lock.Compiler)
 	}

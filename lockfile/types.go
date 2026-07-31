@@ -45,13 +45,18 @@ type Compiler struct {
 // Package is one resolved dependency-graph entry.
 type Package struct {
 	Key               string             `json:"-"`
+	Constraint        string             `json:"-"`
 	Name              string             `json:"name"`
 	Resolved          string             `json:"resolved"`
 	Version           string             `json:"version,omitempty"`
 	Commit            string             `json:"commit"`
 	Source            PackageSource      `json:"source"`
 	Checksum          string             `json:"checksum,omitempty"`
+	Integrity         string             `json:"-"`
 	Kind              string             `json:"kind"`
+	Branch            string             `json:"-"`
+	Transitive        bool               `json:"-"`
+	RequiredBy        []string           `json:"-"`
 	PlatformArtifacts []PlatformArtifact `json:"platformArtifacts,omitempty"`
 	Dependencies      []string           `json:"dependencies,omitempty"`
 }
