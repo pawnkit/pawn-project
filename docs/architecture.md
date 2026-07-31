@@ -66,6 +66,10 @@ in [compatibility.md](compatibility.md).
 
 Filesystem, download, cache, and clock behavior can be replaced in tests. Project loading and archive tests therefore run offline and do not depend on a user's machine.
 
+Resource downloads are checked before they reach the filesystem. The
+dependency layer exposes a verified payload for the installer to stage and
+commit separately.
+
 ### Paths are checked before joining
 
 Manifest, include, lockfile, and archive paths are cleaned and checked for traversal before filesystem access.

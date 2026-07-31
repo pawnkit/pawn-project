@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.0 - 2026-07-31
+
+### Added
+
+- Download and verify bounded RFC 0021 raw, ZIP, and tar.gz resources.
+
 ## 0.8.0 - 2026-07-31
 
 ### Added
