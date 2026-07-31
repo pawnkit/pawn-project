@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.22.0 - 2026-07-31
+
+- Detect direct dependency changes without network access.
+
 ## 0.21.0 - 2026-07-31
 
 - Detect complete locked resource sets without release lookups.

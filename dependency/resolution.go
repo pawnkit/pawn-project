@@ -43,6 +43,36 @@ func NewGraphResolver(provider RevisionProvider) *GraphResolver {
 	return &GraphResolver{provider: provider}
 }
 
+// LockNeedsResolution reports whether direct dependencies changed.
+func LockNeedsResolution(root *manifest.Manifest, existing *lockfile.Lock) bool {
+	if root == nil || existing == nil {
+		return true
+	}
+
+	expected := make(map[string]resolutionRequest, len(root.Dependencies)+len(root.DevDependencies))
+	for _, request := range rootResolutionRequests(root) {
+		expected[dependencyKey(request.dependency)] = request
+	}
+
+	found := make(map[string]bool, len(expected))
+	for _, pkg := range existing.Packages {
+		request, direct := expected[pkg.Key]
+		if !pkg.Transitive && !direct {
+			return true
+		}
+		if !direct {
+			continue
+		}
+		if pkg.Transitive || pkg.Constraint != dependencyConstraint(request.dependency) ||
+			pkg.Kind != dependencyKind(request.dependency, request.dev) {
+			return true
+		}
+		found[pkg.Key] = true
+	}
+
+	return len(found) != len(expected)
+}
+
 type resolutionRequest struct {
 	dependency manifest.Dependency
 	parent     string

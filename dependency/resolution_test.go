@@ -100,6 +100,50 @@ func TestGraphResolverPassesMatchingLockEntry(t *testing.T) {
 	}
 }
 
+func TestLockNeedsResolution(t *testing.T) {
+	dependency := mustDependency(t, "owner/package:v1")
+	root := &manifest.Manifest{Dependencies: []manifest.Dependency{dependency}}
+	matching := &lockfile.Lock{Packages: []lockfile.Package{{
+		Key: "github.com/owner/package", Constraint: ":v1", Kind: lockfile.KindDependency,
+	}}}
+	if LockNeedsResolution(root, matching) {
+		t.Fatal("matching lock needs resolution")
+	}
+
+	tests := map[string]*lockfile.Lock{
+		"missing lock":    nil,
+		"missing package": {Packages: nil},
+		"changed constraint": {Packages: []lockfile.Package{{
+			Key: "github.com/owner/package", Constraint: ":v2", Kind: lockfile.KindDependency,
+		}}},
+		"transitive direct package": {Packages: []lockfile.Package{{
+			Key: "github.com/owner/package", Constraint: ":v1", Kind: lockfile.KindDependency, Transitive: true,
+		}}},
+		"removed direct package": {Packages: []lockfile.Package{
+			matching.Packages[0],
+			{Key: "github.com/owner/removed", Constraint: ":v1", Kind: lockfile.KindDependency},
+		}},
+	}
+	for name, lock := range tests {
+		t.Run(name, func(t *testing.T) {
+			if !LockNeedsResolution(root, lock) {
+				t.Fatal("lock does not need resolution")
+			}
+		})
+	}
+}
+
+func TestLockNeedsResolutionChecksDependencyKind(t *testing.T) {
+	dependency := mustDependency(t, "owner/tool:v1")
+	root := &manifest.Manifest{DevDependencies: []manifest.Dependency{dependency}}
+	lock := &lockfile.Lock{Packages: []lockfile.Package{{
+		Key: "github.com/owner/tool", Constraint: ":v1", Kind: lockfile.KindDependency,
+	}}}
+	if !LockNeedsResolution(root, lock) {
+		t.Fatal("dependency kind change was not detected")
+	}
+}
+
 func TestGraphResolverRejectsConflictsAndCycles(t *testing.T) {
 	t.Run("conflict", func(t *testing.T) {
 		root := &manifest.Manifest{Dependencies: []manifest.Dependency{
