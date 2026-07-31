@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.0 - 2026-07-31
+
+### Added
+
+- Restore all locked resources for an exact host target as one transaction.
+
 ## 0.10.0 - 2026-07-31
 
 ### Added

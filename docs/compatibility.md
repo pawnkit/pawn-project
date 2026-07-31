@@ -54,7 +54,8 @@ records are checked for exact package keys, target coordinates, HTTPS URLs,
 checksums, bounded sizes, and safe destination paths. ZIP, tar.gz, and raw
 assets can be downloaded and verified in memory. Filesystem installation is
 staged below `.pawnkit` and rolled back as one payload when a write fails.
-Dependency-wide resource resolution and orchestration remain to be implemented.
+All locked records for an exact host target are verified before that payload
+is installed. Network resolution and lockfile updates remain to be implemented.
 
 ## Toolchain manager
 

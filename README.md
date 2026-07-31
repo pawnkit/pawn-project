@@ -12,6 +12,8 @@ recorded in `pawn.lock`. The lockfile reader also validates experimental RFC
 checks its archive and file hashes, and returns only the declared files.
 `dependency.InstallResourcePayload` stages those files and rolls back the
 whole payload if installation fails.
+`dependency.ResourceRestorer` selects one exact host target and commits all
+of its locked resources together.
 
 ## Use it in Go
 

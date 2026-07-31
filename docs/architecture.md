@@ -69,6 +69,8 @@ Filesystem, download, cache, and clock behavior can be replaced in tests. Projec
 Resource downloads are checked before they reach the filesystem. The
 dependency layer exposes a verified payload and installs it through a staged
 transaction. A failed commit restores every replaced file.
+Target selection does not fall back to another operating system or
+architecture.
 
 ### Paths are checked before joining
 
