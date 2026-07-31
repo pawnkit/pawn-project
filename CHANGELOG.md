@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.1 - 2026-07-31
+
+- Distinguish exact tags from version ranges without provider lookups.
+
 ## 0.26.0 - 2026-07-31
 
 - Select deterministic tags from sampctl-compatible version ranges.

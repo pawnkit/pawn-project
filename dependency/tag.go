@@ -4,9 +4,15 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/Masterminds/semver/v3"
 )
+
+// IsTagRange reports whether a tag constraint requires version selection.
+func IsTagRange(constraint string) bool {
+	return strings.ContainsAny(constraint, "^~*xX<>=,| ")
+}
 
 // SelectTag returns the newest tag matching a dependency constraint.
 func SelectTag(tags []string, constraint string) (string, error) {

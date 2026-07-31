@@ -46,3 +46,16 @@ func TestSelectTagIsIndependentOfInputOrder(t *testing.T) {
 		t.Fatalf("tags differ: %q and %q", first, second)
 	}
 }
+
+func TestIsTagRange(t *testing.T) {
+	for constraint, want := range map[string]bool{
+		"v1.2.3": false,
+		"^1.2.3": true,
+		"~2.x":   true,
+		">=1 <2": true,
+	} {
+		if got := IsTagRange(constraint); got != want {
+			t.Errorf("IsTagRange(%q) = %t, want %t", constraint, got, want)
+		}
+	}
+}
