@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.32.1 - 2026-07-31
+
+- Apply same-package constraint overrides without reporting a cycle.
+
 ## 0.32.0 - 2026-07-31
 
 - Apply reviewed root overrides to obsolete transitive dependencies.

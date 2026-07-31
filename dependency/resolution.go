@@ -268,6 +268,9 @@ func applyDependencyOverride(
 		if !ok {
 			return dep, nil
 		}
+		if dependencyKey(replacement) == key {
+			return replacement, nil
+		}
 		if seen[key] {
 			return manifest.Dependency{}, fmt.Errorf("dependency: override cycle detected at %s", key)
 		}

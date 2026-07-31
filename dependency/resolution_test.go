@@ -166,6 +166,19 @@ func TestGraphResolverRejectsOverrideCycle(t *testing.T) {
 	}
 }
 
+func TestGraphResolverAppliesConstraintOverride(t *testing.T) {
+	dep := mustDependency(t, "owner/child")
+	replacement, err := applyDependencyOverride(dep, map[string]manifest.Dependency{
+		"github.com/owner/child": mustDependency(t, "owner/child:v2"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if replacement.RefKind != manifest.RefTag || replacement.Ref != "v2" {
+		t.Fatalf("replacement = %#v", replacement)
+	}
+}
+
 func TestGraphResolverPassesMatchingLockEntry(t *testing.T) {
 	dependency := mustDependency(t, "owner/a:v1")
 	root := &manifest.Manifest{Dependencies: []manifest.Dependency{dependency}}
