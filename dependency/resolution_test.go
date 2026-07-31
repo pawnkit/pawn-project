@@ -130,6 +130,30 @@ func TestGraphResolverUpdateDoesNotReuseLockEntry(t *testing.T) {
 	}
 }
 
+func TestGraphResolverCollapsesProviderAliases(t *testing.T) {
+	root := &manifest.Manifest{Dependencies: []manifest.Dependency{
+		mustDependency(t, "old-owner/package"),
+		mustDependency(t, "new-owner/package"),
+	}}
+	provider := &graphRevisionProvider{
+		revisions: map[string]Revision{
+			"github.com/old-owner/package": {
+				Commit: commitA, Resolved: "HEAD", CanonicalName: "new-owner/package",
+			},
+		},
+		locked: map[string]bool{},
+	}
+
+	packages, err := NewGraphResolver(provider).Resolve(context.Background(), root, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(packages) != 1 || packages[0].Name != "new-owner/package" ||
+		packages[0].Source.URL != "https://github.com/new-owner/package" {
+		t.Fatalf("packages = %+v", packages)
+	}
+}
+
 func TestLockNeedsResolution(t *testing.T) {
 	dependency := mustDependency(t, "owner/package:v1")
 	root := &manifest.Manifest{Dependencies: []manifest.Dependency{dependency}}

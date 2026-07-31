@@ -22,10 +22,11 @@ var fullCommitPattern = regexp.MustCompile(`^[0-9a-f]{40}$`)
 
 // Revision is one provider-resolved package revision and manifest.
 type Revision struct {
-	Commit    string
-	Resolved  string
-	SourceURL string
-	Manifest  manifest.Manifest
+	Commit        string
+	Resolved      string
+	CanonicalName string
+	SourceURL     string
+	Manifest      manifest.Manifest
 }
 
 // RevisionProvider resolves a manifest dependency to an exact revision.
@@ -96,7 +97,7 @@ func (r *GraphResolver) Resolve(
 }
 
 // ResolveWithOptions selects exact revisions with explicit update behavior.
-func (r *GraphResolver) ResolveWithOptions(
+func (r *GraphResolver) ResolveWithOptions( //nolint:gocyclo // Graph traversal validates each state transition.
 	ctx context.Context,
 	root *manifest.Manifest,
 	existing *lockfile.Lock,
@@ -116,6 +117,7 @@ func (r *GraphResolver) ResolveWithOptions(
 	queue := rootResolutionRequests(root)
 	packages := make(map[string]*lockfile.Package)
 	constraints := make(map[string]string)
+	canonicalKeys := make(map[string]string)
 
 	for len(queue) > 0 {
 		if err := ctx.Err(); err != nil {
@@ -133,14 +135,16 @@ func (r *GraphResolver) ResolveWithOptions(
 			cycle := append(append([]string(nil), request.ancestry[cycleStart:]...), key)
 			return nil, fmt.Errorf("dependency: cycle detected: %s", strings.Join(cycle, " -> "))
 		}
+		if canonicalKey, ok := canonicalKeys[request.dependency.Name()]; ok {
+			if previous := constraints[canonicalKey]; previous != constraint {
+				return nil, conflictingConstraintsError(canonicalKey, previous, constraint)
+			}
+			mergeResolutionEdge(packages, canonicalKey, request)
+			continue
+		}
 		if previous, ok := constraints[key]; ok {
 			if previous != constraint {
-				return nil, fmt.Errorf(
-					"dependency: conflicting constraints for %s: %q and %q",
-					key,
-					previous,
-					constraint,
-				)
+				return nil, conflictingConstraintsError(key, previous, constraint)
 			}
 			mergeResolutionEdge(packages, key, request)
 			continue
@@ -158,11 +162,27 @@ func (r *GraphResolver) ResolveWithOptions(
 			return nil, fmt.Errorf("dependency: %s resolved invalid commit %q", key, revision.Commit)
 		}
 		if revision.SourceURL == "" {
-			revision.SourceURL = "https://github.com/" + request.dependency.Name()
+			name := revision.CanonicalName
+			if name == "" {
+				name = request.dependency.Name()
+			}
+			revision.SourceURL = "https://github.com/" + name
+		}
+		canonicalName := revision.CanonicalName
+		if canonicalName == "" {
+			canonicalName = request.dependency.Name()
+		}
+		if canonicalKey, ok := canonicalKeys[canonicalName]; ok {
+			previous := constraints[canonicalKey]
+			if previous != constraint {
+				return nil, conflictingConstraintsError(canonicalKey, previous, constraint)
+			}
+			mergeResolutionEdge(packages, canonicalKey, request)
+			continue
 		}
 
 		pkg := &lockfile.Package{
-			Key: key, Constraint: constraint, Name: request.dependency.Name(),
+			Key: key, Constraint: constraint, Name: canonicalName,
 			Resolved: revision.Resolved, Commit: revision.Commit,
 			Source:     lockfile.PackageSource{Type: lockfile.SourceTypeGit, URL: revision.SourceURL},
 			Integrity:  "commit:" + revision.Commit,
@@ -175,6 +195,8 @@ func (r *GraphResolver) ResolveWithOptions(
 		}
 		packages[key] = pkg
 		constraints[key] = constraint
+		canonicalKeys[canonicalName] = key
+		canonicalKeys[request.dependency.Name()] = key
 		if request.parent != "" {
 			addForwardDependency(packages, request.parent, pkg.Name)
 		}
@@ -189,6 +211,10 @@ func (r *GraphResolver) ResolveWithOptions(
 		}
 	}
 
+	return sortedResolvedPackages(packages), nil
+}
+
+func sortedResolvedPackages(packages map[string]*lockfile.Package) []lockfile.Package {
 	result := make([]lockfile.Package, 0, len(packages))
 	for _, pkg := range packages {
 		sort.Strings(pkg.RequiredBy)
@@ -196,7 +222,16 @@ func (r *GraphResolver) ResolveWithOptions(
 		result = append(result, *pkg)
 	}
 	sort.Slice(result, func(i, j int) bool { return result[i].Key < result[j].Key })
-	return result, nil
+	return result
+}
+
+func conflictingConstraintsError(key, previous, constraint string) error {
+	return fmt.Errorf(
+		"dependency: conflicting constraints for %s: %q and %q",
+		key,
+		previous,
+		constraint,
+	)
 }
 
 func reusableLockedPackage(

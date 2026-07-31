@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.24.0 - 2026-07-31
+
+- Collapse provider-reported repository aliases in dependency graphs.
+
 ## 0.23.0 - 2026-07-31
 
 - Support explicit dependency graph refreshes.
