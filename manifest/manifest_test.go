@@ -66,6 +66,12 @@ func TestLoad_PawnKitSpecExample(t *testing.T) {
 	if res.Manifest.PawnKit.Profile != "openmp" {
 		t.Errorf("PawnKit.Profile = %q", res.Manifest.PawnKit.Profile)
 	}
+	if res.Manifest.Runtime == nil ||
+		res.Manifest.Runtime.RCONPassword != "changeme" ||
+		res.Manifest.Runtime.Hostname != "Example open.mp server" ||
+		res.Manifest.Runtime.MaxPlayers != 50 {
+		t.Errorf("Runtime = %+v", res.Manifest.Runtime)
+	}
 
 	if got := res.Manifest.EffectiveIncludePaths(); len(got) != 2 {
 		t.Errorf("EffectiveIncludePaths = %v", got)
@@ -111,6 +117,30 @@ func TestLoad_MinimalManifestIsValid(t *testing.T) {
 
 	if res.Manifest == nil {
 		t.Fatal("Manifest is nil")
+	}
+}
+
+func TestLoad_RuntimePreservesExplicitFalse(t *testing.T) {
+	m := fsx.NewMem()
+	m.AddFile("/proj/pawn.json", []byte(`{
+		"runtime": {
+			"announce": false,
+			"query": false,
+			"rcon": false,
+			"chatlogging": false
+		}
+	}`))
+
+	res, err := Load(source.NewRegistry(), m, "/proj/pawn.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	runtime := res.Manifest.Runtime
+	if runtime == nil || runtime.Announce == nil || *runtime.Announce ||
+		runtime.Query == nil || *runtime.Query ||
+		runtime.RCON == nil || *runtime.RCON ||
+		runtime.ChatLogging == nil || *runtime.ChatLogging {
+		t.Fatalf("Runtime = %+v", runtime)
 	}
 }
 

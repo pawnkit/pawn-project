@@ -81,14 +81,51 @@ type CompilerRef struct {
 
 // Runtime describes a server configuration. Extra preserves unknown fields.
 type Runtime struct {
-	Name          string         `json:"name,omitempty" yaml:"name,omitempty"`
-	Version       string         `json:"version,omitempty" yaml:"version,omitempty"`
-	Mode          string         `json:"mode,omitempty" yaml:"mode,omitempty"`
-	Port          int            `json:"port,omitempty" yaml:"port,omitempty"`
-	Gamemodes     []string       `json:"gamemodes,omitempty" yaml:"gamemodes,omitempty"`
-	Filterscripts []string       `json:"filterscripts,omitempty" yaml:"filterscripts,omitempty"`
-	Plugins       []string       `json:"plugins,omitempty" yaml:"plugins,omitempty"`
-	Extra         map[string]any `json:"extra,omitempty" yaml:"extra,omitempty"`
+	Name              string         `json:"name,omitempty" yaml:"name,omitempty"`
+	Version           string         `json:"version,omitempty" yaml:"version,omitempty"`
+	Endpoint          string         `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
+	Mode              string         `json:"mode,omitempty" yaml:"mode,omitempty"`
+	Port              int            `json:"port,omitempty" yaml:"port,omitempty"`
+	Gamemodes         []string       `json:"gamemodes,omitempty" yaml:"gamemodes,omitempty"`
+	Filterscripts     []string       `json:"filterscripts,omitempty" yaml:"filterscripts,omitempty"`
+	Plugins           []string       `json:"plugins,omitempty" yaml:"plugins,omitempty"`
+	RCONPassword      string         `json:"rcon_password,omitempty" yaml:"rcon_password,omitempty"`
+	Announce          *bool          `json:"announce,omitempty" yaml:"announce,omitempty"`
+	MaxPlayers        int            `json:"maxplayers,omitempty" yaml:"maxplayers,omitempty"`
+	LANMode           *bool          `json:"lanmode,omitempty" yaml:"lanmode,omitempty"`
+	Query             *bool          `json:"query,omitempty" yaml:"query,omitempty"`
+	RCON              *bool          `json:"rcon,omitempty" yaml:"rcon,omitempty"`
+	LogQueries        *bool          `json:"logqueries,omitempty" yaml:"logqueries,omitempty"`
+	StreamRate        int            `json:"stream_rate,omitempty" yaml:"stream_rate,omitempty"`
+	StreamDistance    float64        `json:"stream_distance,omitempty" yaml:"stream_distance,omitempty"`
+	Sleep             any            `json:"sleep,omitempty" yaml:"sleep,omitempty"`
+	MaxNPC            int            `json:"maxnpc,omitempty" yaml:"maxnpc,omitempty"`
+	OnFootRate        int            `json:"onfoot_rate,omitempty" yaml:"onfoot_rate,omitempty"`
+	InCarRate         int            `json:"incar_rate,omitempty" yaml:"incar_rate,omitempty"`
+	WeaponRate        int            `json:"weapon_rate,omitempty" yaml:"weapon_rate,omitempty"`
+	ChatLogging       *bool          `json:"chatlogging,omitempty" yaml:"chatlogging,omitempty"`
+	Timestamp         *bool          `json:"timestamp,omitempty" yaml:"timestamp,omitempty"`
+	Bind              string         `json:"bind,omitempty" yaml:"bind,omitempty"`
+	Password          string         `json:"password,omitempty" yaml:"password,omitempty"`
+	Hostname          string         `json:"hostname,omitempty" yaml:"hostname,omitempty"`
+	Language          string         `json:"language,omitempty" yaml:"language,omitempty"`
+	MapName           string         `json:"mapname,omitempty" yaml:"mapname,omitempty"`
+	WebURL            string         `json:"weburl,omitempty" yaml:"weburl,omitempty"`
+	GameModeText      string         `json:"gamemodetext,omitempty" yaml:"gamemodetext,omitempty"`
+	NoSign            string         `json:"nosign,omitempty" yaml:"nosign,omitempty"`
+	LogTimeFormat     string         `json:"logtimeformat,omitempty" yaml:"logtimeformat,omitempty"`
+	MessageHoleLimit  int            `json:"messageholelimit,omitempty" yaml:"messageholelimit,omitempty"`
+	MessagesLimit     int            `json:"messageslimit,omitempty" yaml:"messageslimit,omitempty"`
+	AckLimit          int            `json:"ackslimit,omitempty" yaml:"ackslimit,omitempty"`
+	PlayerTimeout     int            `json:"playertimeout,omitempty" yaml:"playertimeout,omitempty"`
+	MinConnectionTime int            `json:"minconnectiontime,omitempty" yaml:"minconnectiontime,omitempty"`
+	LagCompMode       int            `json:"lagcompmode,omitempty" yaml:"lagcompmode,omitempty"`
+	ConnectionSeed    int            `json:"connseedtime,omitempty" yaml:"connseedtime,omitempty"`
+	DBLogging         *bool          `json:"db_logging,omitempty" yaml:"db_logging,omitempty"`
+	DBLogQueries      *bool          `json:"db_log_queries,omitempty" yaml:"db_log_queries,omitempty"`
+	ConnectionCookies *bool          `json:"conncookies,omitempty" yaml:"conncookies,omitempty"`
+	CookieLogging     *bool          `json:"cookielogging,omitempty" yaml:"cookielogging,omitempty"`
+	Extra             map[string]any `json:"extra,omitempty" yaml:"extra,omitempty"`
 }
 
 // PawnKitExtension contains optional PawnKit settings.

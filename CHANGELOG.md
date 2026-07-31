@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0 - 2026-07-31
+
+### Added
+
+- Expose the accepted sampctl runtime settings to native consumers.
+
 ## 0.6.2 - 2026-07-30
 
 ### Fixed
