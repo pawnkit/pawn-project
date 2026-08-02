@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.34.2 - 2026-08-02
+
+- Use pawnkit-core 0.5.0.
+
 ## 0.34.1 - 2026-07-31
 
 - Replace clean dependency checkouts when their locked commit changes.
