@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Add project-loading and include-resolution benchmarks.
+
 ## 0.34.2 - 2026-08-02
 
 - Use pawnkit-core 0.5.0.
