@@ -89,7 +89,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: pawnkit/pawn-corpus
-          ref: 3ba7b8d930328c7c5ccc048e3420af16765c3641
+          ref: 43cee425a3a528d1b71d4e2a24eb250b7df62d59
           path: pawn-corpus
 
       - uses: actions/setup-go@v6
