@@ -43,3 +43,8 @@ tasks:
       - task: lint
       - task: build
       - task: test
+
+  bench:
+    desc: Run project and include benchmarks
+    cmds:
+      - go test ./project ./include -run=^$ -bench=. -benchmem

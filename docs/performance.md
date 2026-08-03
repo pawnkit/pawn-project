@@ -6,14 +6,20 @@ Project loading handles manifests and lockfiles, not Pawn source trees. Most inp
 
 On a warm filesystem cache, loading a normal project should take well under 50 ms. Manifest and lockfile parsing should stay in the low milliseconds. Include resolution grows with the number of include roots because each candidate may require a filesystem check.
 
-These are working expectations, not a published benchmark baseline. The repository does not yet contain `Benchmark` functions.
+These are working expectations, not a published benchmark baseline. The
+repository has focused in-memory benchmarks for project loading and include
+resolution.
 
-## Benchmarks to add
+## Benchmarks
 
-Useful fixtures would cover:
+The current benchmarks cover:
+
+- a manifest with 200 dependencies;
+- 50 include roots with the match in the final root.
+
+Useful follow-up fixtures would cover:
 
 - a small project manifest;
-- 200 manifest dependencies;
 - a 500-package lockfile;
 - many include roots and a deep include chain;
 - malformed input and dependency cycles.
