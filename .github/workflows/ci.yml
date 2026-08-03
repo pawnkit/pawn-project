@@ -99,7 +99,7 @@ jobs:
       - name: Run corpus-backed tests
         working-directory: pawn-project
         env:
-        PAWN_CORPUS_DIR: ${{ github.workspace }}/pawn-corpus
+          PAWN_CORPUS_DIR: ${{ github.workspace }}/pawn-corpus
         run: go test -count=1 ./...
 
   benchmarks:
