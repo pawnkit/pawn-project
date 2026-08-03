@@ -19,11 +19,11 @@ jobs:
         go-version: ["1.26", "stable"]
     steps:
       - name: Check out pawn-project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: pawn-project
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.go-version }}
 
@@ -62,16 +62,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out pawn-project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: pawn-project
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: "1.26"
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v7
+        uses: golangci/golangci-lint-action@v9
         with:
           version: v2.11.4
           working-directory: pawn-project
@@ -81,18 +81,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out pawn-project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: pawn-project
 
       - name: Check out pawn-corpus
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: pawnkit/pawn-corpus
           ref: 3ba7b8d930328c7c5ccc048e3420af16765c3641
           path: pawn-corpus
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: "1.26"
 
